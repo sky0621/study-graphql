@@ -42,7 +42,7 @@ export default {
   /*
    ** Nuxt.js modules
    */
-  modules: [],
+  modules: ['@nuxtjs/apollo'],
   /*
    ** vuetify module configuration
    ** https://github.com/nuxt-community/vuetify-module
@@ -64,6 +64,18 @@ export default {
       }
     }
   },
+
+  apollo: {
+    clientConfigs: {
+      default: {
+        // Goサーバを 8080 ポートで起動する予定のため
+        httpEndpoint: 'http://localhost:8080/'
+      }
+    },
+    // 任意だけど、これがないとGraphQL的なエラー起きた時に原因が掴みづらいため
+    errorHandler: '~/plugins/apollo-error-handler.js'
+  },
+
   /*
    ** Build configuration
    */
