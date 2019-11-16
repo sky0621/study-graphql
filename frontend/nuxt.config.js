@@ -69,7 +69,7 @@ export default {
     clientConfigs: {
       default: {
         // Goサーバを 8080 ポートで起動する予定のため
-        httpEndpoint: 'http://localhost:8080/'
+        httpEndpoint: 'http://localhost:8080/query'
       }
     },
     // 任意だけど、これがないとGraphQL的なエラー起きた時に原因が掴みづらいため
