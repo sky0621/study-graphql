@@ -9,7 +9,7 @@ import (
 	"github.com/sky0621/study-graphql/backend"
 )
 
-const defaultPort = "8080"
+const defaultPort = "5050"
 
 func main() {
 	port := os.Getenv("PORT")

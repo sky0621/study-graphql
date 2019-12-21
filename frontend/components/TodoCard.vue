@@ -25,20 +25,32 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import { Vue, Component } from 'nuxt-property-decorator'
+import 'vue-apollo'
 import todos from '~/apollo/queries/todos.gql'
-export default {
-  data() {
-    return {
-      todos: []
-    }
-  },
 
+interface User {
+  id: String
+  name: String
+}
+
+interface Todo {
+  id: String
+  text: String
+  done: Boolean
+  user: User
+}
+
+@Component({
   apollo: {
     todos: {
       prefetch: true,
       query: todos
     }
   }
+})
+export default class TodoCard extends Vue {
+  todos: Todo[] = []
 }
 </script>

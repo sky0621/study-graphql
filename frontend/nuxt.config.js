@@ -69,8 +69,8 @@ export default {
   apollo: {
     clientConfigs: {
       default: {
-        // Goサーバを 8080 ポートで起動する予定のため
-        httpEndpoint: 'http://localhost:8080/query'
+        // Goサーバを 5050 ポートで起動する予定のため
+        httpEndpoint: 'http://localhost:5050/query'
       }
     },
     // 任意だけど、これがないとGraphQL的なエラー起きた時に原因が掴みづらいため
@@ -81,9 +81,14 @@ export default {
    ** Build configuration
    */
   build: {
+    babel: {
+      plugins: [
+        ['@babel/plugin-proposal-decorators', { legacy: true }],
+        ['@babel/plugin-proposal-class-properties', { loose: true }]
+      ]
+    }
     /*
      ** You can extend webpack config here
      */
-    extend(config, ctx) {}
   }
 }
