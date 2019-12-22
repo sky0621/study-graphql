@@ -10,6 +10,13 @@ exec:
 model:
   filename: models_gen.go
 resolver:
-  filename: resolver.go
+  filename: _resolver.go
   type: Resolver
-autobind: []
+autobind:
+  - github.com/sky0621/study-graphql/backend/models
+
+models:
+  User:
+    model: models.User
+  Todo:
+    model: models.Todo
