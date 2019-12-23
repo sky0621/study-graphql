@@ -72,8 +72,8 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	CreateTodo(ctx context.Context, input NewTodo) (*models.Todo, error)
-	CreateUser(ctx context.Context, input NewUser) (*models.User, error)
+	CreateTodo(ctx context.Context, input NewTodo) (string, error)
+	CreateUser(ctx context.Context, input NewUser) (string, error)
 }
 type QueryResolver interface {
 	Todos(ctx context.Context) ([]*models.Todo, error)
@@ -311,8 +311,8 @@ input NewUser {
 }
 
 type Mutation {
-  createTodo(input: NewTodo!): Todo!
-  createUser(input: NewUser!): User!
+  createTodo(input: NewTodo!): ID!
+  createUser(input: NewUser!): ID!
 }`},
 )
 
@@ -464,10 +464,10 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*models.Todo)
+	res := resTmp.(string)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNTodo2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋbackendᚋmodelsᚐTodo(ctx, field.Selections, res)
+	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -508,10 +508,10 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*models.User)
+	res := resTmp.(string)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNUser2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋbackendᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {

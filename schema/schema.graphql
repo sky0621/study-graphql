@@ -33,6 +33,6 @@ input NewUser {
 }
 
 type Mutation {
-  createTodo(input: NewTodo!): Todo!
-  createUser(input: NewUser!): User!
+  createTodo(input: NewTodo!): ID!
+  createUser(input: NewUser!): ID!
 }

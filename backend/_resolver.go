@@ -25,10 +25,10 @@ func (r *Resolver) User() UserResolver {
 
 type mutationResolver struct{ *Resolver }
 
-func (r *mutationResolver) CreateTodo(ctx context.Context, input NewTodo) (*models.Todo, error) {
+func (r *mutationResolver) CreateTodo(ctx context.Context, input NewTodo) (string, error) {
 	panic("not implemented")
 }
-func (r *mutationResolver) CreateUser(ctx context.Context, input NewUser) (*models.User, error) {
+func (r *mutationResolver) CreateUser(ctx context.Context, input NewUser) (string, error) {
 	panic("not implemented")
 }
 
