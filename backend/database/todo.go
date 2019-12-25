@@ -1,15 +1,14 @@
 package database
 
 import (
-	"fmt"
-
 	"github.com/jinzhu/gorm"
 )
 
 type Todo struct {
-	ID   string `gorm:"column:id;primary_key"`
-	Text string `gorm:"column:text"`
-	Done bool   `gorm:"column:done"`
+	ID     string `gorm:"column:id;primary_key"`
+	Text   string `gorm:"column:text"`
+	Done   bool   `gorm:"column:done"`
+	UserID string `gorm:"column:user_id"`
 }
 
 func (u *Todo) TableName() string {
@@ -32,22 +31,35 @@ func NewTodoDao(db *gorm.DB) TodoDao {
 }
 
 func (d *todoDao) InsertOne(u *Todo) error {
-	fmt.Println(d.db.NewRecord(u))
 	res := d.db.Create(u)
 	if err := res.Error; err != nil {
 		return err
 	}
-	fmt.Println(d.db.NewRecord(u))
 	return nil
 }
 func (d *todoDao) FindAll() ([]*Todo, error) {
-	return nil, nil
+	var todos []*Todo
+	res := d.db.Find(&todos)
+	if err := res.Error; err != nil {
+		return nil, err
+	}
+	return todos, nil
 }
 
 func (d *todoDao) FindOne(id string) (*Todo, error) {
-	return nil, nil
+	var todo *Todo
+	res := d.db.Where("id = ?", id).First(&todo)
+	if err := res.Error; err != nil {
+		return nil, err
+	}
+	return todo, nil
 }
 
 func (d *todoDao) FindByUserID(userID string) ([]*Todo, error) {
-	return nil, nil
+	var todos []*Todo
+	res := d.db.Where("user_id = ?", userID).Find(&todos)
+	if err := res.Error; err != nil {
+		return nil, err
+	}
+	return todos, nil
 }

@@ -35,6 +35,7 @@ func main() {
 			}
 		}
 	}()
+	db.LogMode(true)
 
 	http.Handle("/", handler.Playground("GraphQL playground", "/query"))
 	http.Handle("/query", handler.GraphQL(backend.NewExecutableSchema(backend.Config{Resolvers: &backend.Resolver{DB: db}})))

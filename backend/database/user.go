@@ -1,8 +1,6 @@
 package database
 
 import (
-	"fmt"
-
 	"github.com/jinzhu/gorm"
 )
 
@@ -31,23 +29,43 @@ func NewUserDao(db *gorm.DB) UserDao {
 }
 
 func (d *userDao) InsertOne(u *User) error {
-	fmt.Println(d.db.NewRecord(u))
 	res := d.db.Create(u)
 	if err := res.Error; err != nil {
 		return err
 	}
-	fmt.Println(d.db.NewRecord(u))
 	return nil
 }
 
 func (d *userDao) FindAll() ([]*User, error) {
-	return nil, nil
+	var users []*User
+	res := d.db.Find(&users)
+	if err := res.Error; err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
 func (d *userDao) FindOne(id string) (*User, error) {
-	return nil, nil
+	var user *User
+	res := d.db.Where("id = ?", id).First(&user)
+	if err := res.Error; err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 func (d *userDao) FindByTodoID(todoID string) (*User, error) {
-	return nil, nil
+	var users []*User
+	res := d.db.Table("user").
+		Select("user.*").
+		Joins("LEFT JOIN todo ON todo.user_id = user.id").
+		Where("todo.id = ?", todoID).
+		First(&users)
+	if err := res.Error; err != nil {
+		return nil, err
+	}
+	if users == nil || len(users) == 0 {
+		return nil, nil
+	}
+	return users[0], nil
 }

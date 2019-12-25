@@ -38,9 +38,10 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input NewTodo) (strin
 	log.Printf("[mutationResolver.CreateTodo] input: %#v", input)
 	id := util.CreateUniqueID()
 	err := database.NewTodoDao(r.DB).InsertOne(&database.Todo{
-		ID:   id,
-		Text: input.Text,
-		Done: false,
+		ID:     id,
+		Text:   input.Text,
+		Done:   false,
+		UserID: input.UserID,
 	})
 	if err != nil {
 		return "", err
