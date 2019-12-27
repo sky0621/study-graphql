@@ -47,12 +47,15 @@ func (d *todoDao) FindAll() ([]*Todo, error) {
 }
 
 func (d *todoDao) FindOne(id string) (*Todo, error) {
-	var todo *Todo
-	res := d.db.Where("id = ?", id).First(&todo)
+	var todos []*Todo
+	res := d.db.Where("id = ?", id).Find(&todos)
 	if err := res.Error; err != nil {
 		return nil, err
 	}
-	return todo, nil
+	if len(todos) < 1 {
+		return nil, nil
+	}
+	return todos[0], nil
 }
 
 func (d *todoDao) FindByUserID(userID string) ([]*Todo, error) {

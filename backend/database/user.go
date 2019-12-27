@@ -46,12 +46,15 @@ func (d *userDao) FindAll() ([]*User, error) {
 }
 
 func (d *userDao) FindOne(id string) (*User, error) {
-	var user *User
-	res := d.db.Where("id = ?", id).First(&user)
+	var users []*User
+	res := d.db.Where("id = ?", id).Find(&users)
 	if err := res.Error; err != nil {
 		return nil, err
 	}
-	return user, nil
+	if len(users) < 1 {
+		return nil, nil
+	}
+	return users[0], nil
 }
 
 func (d *userDao) FindByTodoID(todoID string) (*User, error) {
