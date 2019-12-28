@@ -2,6 +2,7 @@ package backend
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/sky0621/study-graphql/backend/util"
@@ -87,6 +88,9 @@ func (r *queryResolver) Todo(ctx context.Context, id string) (*models.Todo, erro
 	if err != nil {
 		return nil, err
 	}
+	if user == nil {
+		return nil, errors.New("not found")
+	}
 	return &models.Todo{
 		ID:   todo.ID,
 		Text: todo.Text,
@@ -115,6 +119,9 @@ func (r *queryResolver) User(ctx context.Context, id string) (*models.User, erro
 	user, err := database.NewUserDao(r.DB).FindOne(id)
 	if err != nil {
 		return nil, err
+	}
+	if user == nil {
+		return nil, errors.New("not found")
 	}
 	return &models.User{
 		ID:   user.ID,
