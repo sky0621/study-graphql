@@ -29,18 +29,8 @@
 import { Vue, Component } from 'nuxt-property-decorator'
 import 'vue-apollo'
 import todos from '~/apollo/queries/todos.gql'
-
-interface User {
-  id: String
-  name: String
-}
-
-interface Todo {
-  id: String
-  text: String
-  done: Boolean
-  user: User
-}
+// eslint-disable-next-line no-unused-vars
+import { Todo } from '~/gql-types'
 
 @Component({
   apollo: {
