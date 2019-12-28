@@ -1,0 +1,7 @@
+overwrite: true
+schema: http://localhost:5050/query
+generates:
+  ./gql-types.d.ts:
+    plugins:
+      - typescript
+      - typescript-operations
