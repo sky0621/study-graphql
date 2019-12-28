@@ -88,7 +88,7 @@ func (r *queryResolver) Todo(ctx context.Context, id string) (*models.Todo, erro
 	if err != nil {
 		return nil, err
 	}
-	if user == nil {
+	if todo == nil {
 		return nil, errors.New("not found")
 	}
 	return &models.Todo{
