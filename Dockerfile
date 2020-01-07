@@ -6,11 +6,11 @@ RUN apk add --update --no-cache ca-certificates git
 
 RUN mkdir /go-app
 WORKDIR /go-app
-COPY go.mod .
-COPY go.sum .
+COPY backend/go.mod .
+COPY backend/go.sum .
 
 RUN go mod download
-COPY . .
+COPY backend .
 
 RUN cd server && CGO_ENABLED=0 go build -o /go/bin/go-app
 
