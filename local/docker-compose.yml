@@ -12,21 +12,8 @@ services:
       MYSQL_PASSWORD: localpass
       MYSQL_DATABASE: localdb
     volumes:
-      - ./persistence/init:/docker-entrypoint-initdb.d
-    networks:
-      - study-graphql-network
-
-  app:
-    build: .
-    ports:
-    - "80:5050"
-    networks:
-      - study-graphql-network
+      - ./init:/docker-entrypoint-initdb.d
 
 volumes:
   localdb:
     external: false
-
-networks:
-  study-graphql-network:
-    external: true
