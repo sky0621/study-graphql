@@ -5,7 +5,6 @@ FROM golang:1.13.5-alpine3.11 as build-step
 RUN apk add --update --no-cache ca-certificates git
 
 # in container
-RUN mkdir /go-app
 WORKDIR /go-app
 
 # from host-pc to container

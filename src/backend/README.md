@@ -17,6 +17,7 @@ go run github.com/99designs/gqlgen -v
 ### build
 
 <pre>
+sudo docker login
 sudo docker build . -t sky0621dhub/study-graphql-backend:v0.1
 </pre>
 

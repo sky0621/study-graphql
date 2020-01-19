@@ -1,0 +1,8 @@
+node_modules
+.gitignore
+codegen.yml
+Dockerfile
+README.md
+.editorconfig
+.eslintignore
+.idea
