@@ -4,14 +4,22 @@ FROM golang:1.13.5-alpine3.11 as build-step
 # for go mod download
 RUN apk add --update --no-cache ca-certificates git
 
+# in container
 RUN mkdir /go-app
 WORKDIR /go-app
-COPY backend/go.mod .
-COPY backend/go.sum .
 
+# from host-pc to container
+COPY go.mod .
+COPY go.sum .
+
+# in container
 RUN go mod download
-COPY backend .
 
+# from host-pc to container
+COPY . .
+RUN pwd
+
+# in container
 RUN cd server && CGO_ENABLED=0 go build -o /go/bin/go-app
 
 # -----------------------------------------------------------------------------

@@ -3,7 +3,7 @@ package backend
 import (
 	"context"
 
-	"github.com/sky0621/study-graphql/backend/models"
+	"github.com/sky0621/study-graphql/src/backend/models"
 )
 
 // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.

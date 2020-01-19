@@ -7,7 +7,7 @@ import (
 
 	"github.com/99designs/gqlgen/handler"
 	"github.com/jinzhu/gorm"
-	"github.com/sky0621/study-graphql/backend"
+	"github.com/sky0621/study-graphql/src/backend"
 
 	_ "github.com/go-sql-driver/mysql"
 )

@@ -1,4 +1,4 @@
-module github.com/sky0621/study-graphql/backend
+module github.com/sky0621/study-graphql/src/backend
 
 go 1.13
 

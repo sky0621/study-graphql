@@ -5,13 +5,13 @@ import (
 	"errors"
 	"log"
 
-	"github.com/sky0621/study-graphql/backend/util"
+	"github.com/sky0621/study-graphql/src/backend/util"
 
-	"github.com/sky0621/study-graphql/backend/database"
+	"github.com/sky0621/study-graphql/src/backend/database"
 
 	"github.com/jinzhu/gorm"
 
-	"github.com/sky0621/study-graphql/backend/models"
+	"github.com/sky0621/study-graphql/src/backend/models"
 ) // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
 
 // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.

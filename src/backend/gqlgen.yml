@@ -13,7 +13,7 @@ resolver:
   filename: _resolver.go
   type: Resolver
 autobind:
-  - github.com/sky0621/study-graphql/backend/models
+  - github.com/sky0621/study-graphql/src/backend/models
 
 models:
   User:
