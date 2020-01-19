@@ -12,10 +12,14 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-const dataSource = "localuser:localpass@tcp(127.0.0.1:3306)/localdb?charset=utf8&parseTime=True&loc=Local"
+const defaultDataSource = "localuser:localpass@tcp(127.0.0.1:3306)/localdb?charset=utf8&parseTime=True&loc=Local"
 const defaultPort = "5050"
 
 func main() {
+	dataSource := os.Getenv("CLOUDSQL_DATASOURCE")
+	if dataSource == "" {
+		dataSource = defaultDataSource
+	}
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort

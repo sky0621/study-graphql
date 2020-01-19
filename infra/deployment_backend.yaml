@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend-container
+          image: sky0621dhub/study-graphql-backend
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5050
+          env:
+            - name: CLOUDSQL_DATASOURCE
+              valueFrom:
+                configMapKeyRef:
+                  key: DATASOURCE
+                  name: for-backend
