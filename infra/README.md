@@ -3,13 +3,13 @@
 ## GKEクラスタ作成
 
 <pre>
-gcloud container clusters create clst-ftst-02 --preemptible --machine-type=f1-micro --num-nodes=3 --disk-size=10 --zone=asia-northeast1-c
+gcloud container clusters create clst-ftst-03 --preemptible --machine-type=f1-micro --num-nodes=3 --disk-size=10 --zone=asia-northeast1-c
 </pre>
 
 ## auth
 
 <pre>
-gcloud container clusters get-credentials clst-ftst-02 --zone asia-northeast1-c --project [GCP Project]
+gcloud container clusters get-credentials clst-ftst-03 --zone asia-northeast1-c --project [GCP Project]
 </pre>
 
 ## config map

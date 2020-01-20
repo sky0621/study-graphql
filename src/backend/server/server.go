@@ -1,31 +1,45 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/spf13/viper"
 
 	"github.com/99designs/gqlgen/handler"
 	"github.com/jinzhu/gorm"
 	"github.com/sky0621/study-graphql/src/backend"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 )
 
-const defaultDataSource = "localuser:localpass@tcp(127.0.0.1:3306)/localdb?charset=utf8&parseTime=True&loc=Local"
+const dataSourceFormat = "dbname=%s user=%s password=%s sslmode=disable"
 const defaultPort = "5050"
 
+func init() {
+	viper.SetEnvPrefix("STUDY_GRAPHQL")
+	viper.AutomaticEnv()
+	viper.SetDefault("POSTGRES_USER", "postgres")
+	viper.SetDefault("PGPASSWORD", "localpass")
+	viper.SetDefault("POSTGRES_DB", "localdb")
+}
+
 func main() {
+	u := viper.Get("POSTGRES_USER")
+	fmt.Println(u)
+
 	dataSource := os.Getenv("CLOUDSQL_DATASOURCE")
 	if dataSource == "" {
-		dataSource = defaultDataSource
+		//dataSource = defaultDataSource
 	}
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
 	}
 
-	db, err := gorm.Open("mysql", dataSource)
+	db, err := gorm.Open("postgres", dataSource)
 	if err != nil {
 		panic(err)
 	}
