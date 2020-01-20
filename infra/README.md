@@ -3,7 +3,13 @@
 ## GKEクラスタ作成
 
 <pre>
-gcloud container clusters create clst-ftst-01 --preemptible --machine-type=f1-micro --num-nodes=3 --disk-size=10 --zone=asia-northeast1-c
+gcloud container clusters create clst-ftst-02 --preemptible --machine-type=f1-micro --num-nodes=3 --disk-size=10 --zone=asia-northeast1-c
+</pre>
+
+## auth
+
+<pre>
+gcloud container clusters get-credentials clst-ftst-02 --zone asia-northeast1-c --project [GCP Project]
 </pre>
 
 ## config map
@@ -24,4 +30,30 @@ kubectl apply -f deployment_backend.yaml
 
 <pre>
 kubectl apply -f deployment_frontend.yaml
+</pre>
+
+## config
+
+### current
+
+<pre>
+kubectl config current-context
+</pre>
+
+### list
+
+<pre>
+kubectl config get-contexts
+</pre>
+
+### set
+
+<pre>
+kubectl config use-context [context name]
+</pre>
+
+### delete
+
+<pre>
+kubectl config delete-context [context name]
 </pre>
