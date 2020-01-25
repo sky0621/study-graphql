@@ -1,4 +1,5 @@
-CREATE TABLE IF NOT EXISTS todo (
+
+CREATE TABLE IF NOT EXISTS `todo` (
   id varchar(36) NOT NULL,
   text varchar(256) NOT NULL,
   done bool NOT NULL,
@@ -10,9 +11,9 @@ CREATE TABLE IF NOT EXISTS todo (
   delete_user varchar(256) DEFAULT NULL,
   deleted_at timestamp NULL DEFAULT NULL,
   PRIMARY KEY (id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
-CREATE TABLE IF NOT EXISTS "user" (
+CREATE TABLE IF NOT EXISTS `user` (
   id varchar(36) NOT NULL,
   name varchar(256) NOT NULL,
   create_user varchar(256) DEFAULT NULL,
@@ -22,4 +23,4 @@ CREATE TABLE IF NOT EXISTS "user" (
   delete_user varchar(256) DEFAULT NULL,
   deleted_at timestamp NULL DEFAULT NULL,
   PRIMARY KEY (id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;

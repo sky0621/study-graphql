@@ -9,10 +9,10 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/sky0621/study-graphql/src/backend"
 
-	_ "github.com/lib/pq"
+	_ "github.com/go-sql-driver/mysql"
 )
 
-const defaultDataSource = "dbname=localdb user=localuser password=localpass sslmode=disable"
+const defaultDataSource = "localuser:localpass@tcp(localhost:3306)/localdb?charset=utf8&parseTime=True&loc=Local"
 const defaultPort = "5050"
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 		port = defaultPort
 	}
 
-	db, err := gorm.Open("postgres", dataSource)
+	db, err := gorm.Open("mysql", dataSource)
 	if err != nil {
 		panic(err)
 	}
