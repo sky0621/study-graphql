@@ -1,12 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/spf13/viper"
 
 	"github.com/99designs/gqlgen/handler"
 	"github.com/jinzhu/gorm"
@@ -15,24 +12,13 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const dataSourceFormat = "dbname=%s user=%s password=%s sslmode=disable"
+const defaultDataSource = "dbname=localdb user=localuser password=localpass sslmode=disable"
 const defaultPort = "5050"
 
-func init() {
-	viper.SetEnvPrefix("STUDY_GRAPHQL")
-	viper.AutomaticEnv()
-	viper.SetDefault("POSTGRES_USER", "postgres")
-	viper.SetDefault("PGPASSWORD", "localpass")
-	viper.SetDefault("POSTGRES_DB", "localdb")
-}
-
 func main() {
-	u := viper.Get("POSTGRES_USER")
-	fmt.Println(u)
-
 	dataSource := os.Getenv("CLOUDSQL_DATASOURCE")
 	if dataSource == "" {
-		//dataSource = defaultDataSource
+		dataSource = defaultDataSource
 	}
 	port := os.Getenv("PORT")
 	if port == "" {

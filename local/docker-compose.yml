@@ -8,10 +8,11 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=postgres
+      - POSTGRES_USER=localuser
       - POSTGRES_PASSWORD=localpass
       - PGPASSWORD=localpass
       - POSTGRES_DB=localdb
       - DATABASE_HOST=localhost
     volumes:
-      - ./init:/docker-entrypoint-initdb.d
+      - ./persistence/init:/docker-entrypoint-initdb.d
+        #      - ./persistence/data:/var/lib/postgresql/data/
