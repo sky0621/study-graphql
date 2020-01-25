@@ -1,16 +1,16 @@
 <template>
   <div>
-    <TodoCard />
+    <TodoTable />
   </div>
 </template>
 
 <script lang="ts">
 import { Vue, Component } from 'nuxt-property-decorator'
 import 'vue-apollo'
-import TodoCard from '~/components/TodoCard.vue'
+import TodoTable from '~/components/TodoTable.vue'
 
 @Component({
-  components: { TodoCard }
+  components: { TodoTable }
 })
 export default class IndexPage extends Vue {}
 </script>

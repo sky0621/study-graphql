@@ -74,9 +74,10 @@ func (r *queryResolver) Todos(ctx context.Context) ([]*models.Todo, error) {
 	var results []*models.Todo
 	for _, todo := range todos {
 		results = append(results, &models.Todo{
-			ID:   todo.ID,
-			Text: todo.Text,
-			Done: todo.Done,
+			ID:        todo.ID,
+			Text:      todo.Text,
+			Done:      todo.Done,
+			CreatedAt: todo.CreatedAt.Unix(),
 		})
 	}
 	return results, nil

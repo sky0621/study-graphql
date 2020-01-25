@@ -1,14 +1,17 @@
 package database
 
 import (
+	"time"
+
 	"github.com/jinzhu/gorm"
 )
 
 type Todo struct {
-	ID     string `gorm:"column:id;primary_key"`
-	Text   string `gorm:"column:text"`
-	Done   bool   `gorm:"column:done"`
-	UserID string `gorm:"column:user_id"`
+	ID        string    `gorm:"column:id;primary_key"`
+	Text      string    `gorm:"column:text"`
+	Done      bool      `gorm:"column:done"`
+	CreatedAt time.Time `gorm:"column:created_at"`
+	UserID    string    `gorm:"column:user_id"`
 }
 
 func (u *Todo) TableName() string {

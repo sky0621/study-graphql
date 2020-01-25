@@ -3,6 +3,7 @@ query todos {
     id
     text
     done
+    createdAt
     user {
       id
       name
