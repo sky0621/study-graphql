@@ -1,13 +1,29 @@
 <template>
-  <v-data-table
-    :headers="headers"
-    :items="todos"
-    :search="search"
-    :items-per-page="itemsPerPage"
-    :sort-by="sortBy"
-    :sort-desc="sortDesc"
-  >
-  </v-data-table>
+  <v-form>
+    <v-row>
+      <v-col col="5">
+        <v-card class="pa-4">
+          <v-text-field v-model="search" label="Search"></v-text-field>
+        </v-card>
+      </v-col>
+    </v-row>
+    <v-row>
+      <v-col col="9">
+        <v-card>
+          <v-data-table
+            :headers="headers"
+            :items="todos"
+            :search="search"
+            :items-per-page="itemsPerPage"
+            :sort-by="sortBy"
+            :sort-desc="sortDesc"
+            fixed-header
+          >
+          </v-data-table>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-form>
 </template>
 
 <script lang="ts">
@@ -30,7 +46,7 @@ import { DataTableHeader } from '@/types/vuetify'
 export default class TodoCard extends Vue {
   todos: Todo[] = []
   search: string = ''
-  itemsPerPage: number = 3
+  itemsPerPage: number = 10
   sortBy: string = 'createdAt'
   sortDesc: boolean = true
 
@@ -42,22 +58,22 @@ export default class TodoCard extends Vue {
         value: 'id'
       },
       {
-        sortable: false,
+        sortable: true,
         text: 'TODO',
         value: 'text'
       },
       {
-        sortable: false,
+        sortable: true,
         text: 'Done',
         value: 'done'
       },
       {
-        sortable: false,
+        sortable: true,
         text: 'CreatedAt(UnixTimestamp)',
         value: 'createdAt'
       },
       {
-        sortable: false,
+        sortable: true,
         text: 'User',
         value: 'user.name'
       }
