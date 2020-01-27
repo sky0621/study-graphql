@@ -1,7 +1,10 @@
 package database
 
 import (
+	"fmt"
 	"time"
+
+	"github.com/sky0621/study-graphql/src/backend/models"
 
 	"github.com/jinzhu/gorm"
 )
@@ -23,6 +26,7 @@ type TodoDao interface {
 	FindAll() ([]*Todo, error)
 	FindByUserID(userID string) ([]*Todo, error)
 	FindOne(id string) (*Todo, error)
+	CountByTextFilter(filterWord *models.TextFilterCondition) (int64, error)
 }
 
 type todoDao struct {
@@ -68,4 +72,30 @@ func (d *todoDao) FindByUserID(userID string) ([]*Todo, error) {
 		return nil, err
 	}
 	return todos, nil
+}
+
+func (d *todoDao) CountByTextFilter(filterWord *models.TextFilterCondition) (int64, error) {
+	// 絞り込み無しのパターン
+	if filterWord == nil || filterWord.FilterWord == "" {
+		var cnt int64
+		if err := d.db.Model(&Todo{}).Count(&cnt).Error; err != nil {
+			return 0, err
+		}
+		return cnt, nil
+	}
+
+	// デフォルトは部分一致
+	conditionStr := "%" + filterWord.FilterWord + "%"
+	if filterWord.MatchingPattern != nil && *filterWord.MatchingPattern == models.MatchingPatternExactMatch {
+		conditionStr = filterWord.FilterWord
+	}
+
+	where := fmt.Sprintf("")
+
+	var cnt int64
+	if err := d.db.Model(&Todo{}).Where(where).Count(&cnt).Error; err != nil {
+		return 0, err
+	}
+
+	return cnt, nil
 }

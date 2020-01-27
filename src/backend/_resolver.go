@@ -16,9 +16,6 @@ func (r *Resolver) Mutation() MutationResolver {
 func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
 }
-func (r *Resolver) Todo() TodoResolver {
-	return &todoResolver{r}
-}
 func (r *Resolver) User() UserResolver {
 	return &userResolver{r}
 }
@@ -46,19 +43,13 @@ func (r *queryResolver) Todos(ctx context.Context) ([]*models.Todo, error) {
 func (r *queryResolver) Todo(ctx context.Context, id string) (*models.Todo, error) {
 	panic("not implemented")
 }
-func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *TextFilterCondition, pageCondition *PageCondition, edgeOrder *EdgeOrder) (*TodoConnection, error) {
+func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *models.TextFilterCondition, pageCondition *models.PageCondition, edgeOrder *models.EdgeOrder) (*models.TodoConnection, error) {
 	panic("not implemented")
 }
 func (r *queryResolver) Users(ctx context.Context) ([]*models.User, error) {
 	panic("not implemented")
 }
 func (r *queryResolver) User(ctx context.Context, id string) (*models.User, error) {
-	panic("not implemented")
-}
-
-type todoResolver struct{ *Resolver }
-
-func (r *todoResolver) User(ctx context.Context, obj *models.Todo) (*models.User, error) {
 	panic("not implemented")
 }
 

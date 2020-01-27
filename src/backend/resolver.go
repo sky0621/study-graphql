@@ -24,9 +24,6 @@ func (r *Resolver) Mutation() MutationResolver {
 func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
 }
-func (r *Resolver) Todo() TodoResolver {
-	return &todoResolver{r}
-}
 func (r *Resolver) User() UserResolver {
 	return &userResolver{r}
 }
@@ -100,8 +97,22 @@ func (r *queryResolver) Todo(ctx context.Context, id string) (*models.Todo, erro
 		Done: todo.Done,
 	}, nil
 }
-func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *TextFilterCondition, pageCondition *PageCondition, edgeOrder *EdgeOrder) (*TodoConnection, error) {
-	panic("not implemented")
+func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *models.TextFilterCondition, pageCondition *models.PageCondition, edgeOrder *models.EdgeOrder) (*models.TodoConnection, error) {
+	log.Println("[queryResolver.TodoConnection]")
+	/*
+	 * 検索条件に合致する全件数を取得
+	 */
+	totalCount := 0
+
+	edges := []*models.TodoEdge{}
+
+	pageInfo := &models.PageInfo{}
+
+	return &models.TodoConnection{
+		PageInfo:   pageInfo,
+		Edges:      edges,
+		TotalCount: totalCount,
+	}, nil
 }
 func (r *queryResolver) Users(ctx context.Context) ([]*models.User, error) {
 	log.Println("[queryResolver.Users]")
@@ -126,20 +137,6 @@ func (r *queryResolver) User(ctx context.Context, id string) (*models.User, erro
 	}
 	if user == nil {
 		return nil, errors.New("not found")
-	}
-	return &models.User{
-		ID:   user.ID,
-		Name: user.Name,
-	}, nil
-}
-
-type todoResolver struct{ *Resolver }
-
-func (r *todoResolver) User(ctx context.Context, obj *models.Todo) (*models.User, error) {
-	log.Printf("[todoResolver.User] id: %#v", obj)
-	user, err := database.NewUserDao(r.DB).FindByTodoID(obj.ID)
-	if err != nil {
-		return nil, err
 	}
 	return &models.User{
 		ID:   user.ID,
