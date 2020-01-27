@@ -1,0 +1,66 @@
+# Todo
+
+extend type Query {
+  todos: [Todo!]!
+  todo(id: ID!): Todo!
+
+  "Relay準拠ページング対応検索によるTODO一覧取得"
+  todoConnection(
+    "文字列フィルタ条件"
+    filterWord: TextFilterCondition
+    "ページング条件"
+    pageCondition: PageCondition
+    "並び替え条件"
+    edgeOrder: EdgeOrder
+  ): TodoConnection
+}
+
+extend type Mutation {
+  createTodo(input: NewTodo!): ID!
+}
+
+type Todo implements Node {
+  "ID"
+  id: ID!
+  "TODO"
+  text: String!
+  "済みフラグ"
+  done: Boolean!
+  "作成日時"
+  createdAt: Int!
+  "ユーザー情報"
+  user: User!
+}
+
+"TODO並べ替えキー"
+enum TodoOrderKey {
+  "TODO"
+  TEXT
+  "済みフラグ"
+  DONE
+  "作成日時（初期表示時のデフォルト）"
+  CREATED_AT
+  "ユーザー名"
+  USER_NAME
+}
+
+"ページングを伴う結果返却用"
+type TodoConnection implements Connection {
+  "ページ情報"
+  pageInfo: PageInfo!
+  "検索結果一覧（※カーソル情報を含む）"
+  edges: [TodoEdge!]!
+  "検索結果の全件数"
+  totalCount: Int!
+}
+
+"検索結果一覧（※カーソル情報を含む）"
+type TodoEdge implements Edge {
+  node: Todo
+  cursor: Cursor!
+}
+
+input NewTodo {
+  text: String!
+  userId: String!
+}

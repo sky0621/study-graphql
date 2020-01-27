@@ -2,6 +2,52 @@
 
 package backend
 
+import (
+	"fmt"
+	"io"
+	"strconv"
+
+	"github.com/sky0621/study-graphql/src/backend/models"
+)
+
+// ページングを伴う結果返却用
+type Connection interface {
+	IsConnection()
+}
+
+// 検索結果一覧（※カーソル情報を含む）
+type Edge interface {
+	IsEdge()
+}
+
+type Node interface {
+	IsNode()
+}
+
+// 前ページ遷移条件
+type BackwardPagination struct {
+	// 取得件数
+	Last int `json:"last"`
+	// 取得対象識別用カーソル（※前ページ遷移時にこのカーソルよりも前にあるレコードが取得対象）
+	Before *string `json:"before"`
+}
+
+// 並び替え条件
+type EdgeOrder struct {
+	// 並べ替えキー項目
+	Key *OrderKey `json:"key"`
+	// ソート方向
+	Direction OrderDirection `json:"direction"`
+}
+
+// 次ページ遷移条件
+type ForwardPagination struct {
+	// 取得件数
+	First int `json:"first"`
+	// 取得対象識別用カーソル（※次ページ遷移時にこのカーソルよりも後ろにあるレコードが取得対象）
+	After *string `json:"after"`
+}
+
 type NewTodo struct {
 	Text   string `json:"text"`
 	UserID string `json:"userId"`
@@ -9,4 +55,213 @@ type NewTodo struct {
 
 type NewUser struct {
 	Name string `json:"name"`
+}
+
+type NoopInput struct {
+	ClientMutationID *string `json:"clientMutationId"`
+}
+
+type NoopPayload struct {
+	ClientMutationID *string `json:"clientMutationId"`
+}
+
+// 並べ替えのキー
+// 汎用的な構造にしたいが以下はGraphQLの仕様として不可だった。
+// ・enum・・・汎化機能がない。
+// ・interface・・・inputには実装機能がない。
+// ・union・・・inputでは要素に持てない。
+// とはいえ、並べ替えも共通の仕組みとして提供したく、結果として機能毎に enum フィールドを列挙
+type OrderKey struct {
+	// TODO一覧の並べ替えキー
+	TodoOrderKey *TodoOrderKey `json:"todoOrderKey"`
+}
+
+// ページング条件
+type PageCondition struct {
+	// 前ページ遷移条件
+	Backward *BackwardPagination `json:"backward"`
+	// 次ページ遷移条件
+	Forward *ForwardPagination `json:"forward"`
+	// 現在ページ番号（今回のページング実行前の時点のもの）
+	NowPageNo int `json:"nowPageNo"`
+	// １ページ表示件数
+	InitialLimit *int `json:"initialLimit"`
+}
+
+// ページ情報
+type PageInfo struct {
+	// 次ページ有無
+	HasNextPage bool `json:"hasNextPage"`
+	// 前ページ有無
+	HasPreviousPage bool `json:"hasPreviousPage"`
+	// 当該ページの１レコード目
+	StartCursor string `json:"startCursor"`
+	// 当該ページの最終レコード
+	EndCursor string `json:"endCursor"`
+}
+
+// 文字列フィルタ条件
+type TextFilterCondition struct {
+	// フィルタ文字列
+	FilterWord string `json:"filterWord"`
+	// マッチングパターン（※オプション。指定無しの場合は「部分一致」となる。）
+	MatchingPattern *MatchingPattern `json:"matchingPattern"`
+}
+
+// ページングを伴う結果返却用
+type TodoConnection struct {
+	// ページ情報
+	PageInfo *PageInfo `json:"pageInfo"`
+	// 検索結果一覧（※カーソル情報を含む）
+	Edges []*TodoEdge `json:"edges"`
+	// 検索結果の全件数
+	TotalCount int `json:"totalCount"`
+}
+
+func (TodoConnection) IsConnection() {}
+
+// 検索結果一覧（※カーソル情報を含む）
+type TodoEdge struct {
+	Node   *models.Todo `json:"node"`
+	Cursor string       `json:"cursor"`
+}
+
+func (TodoEdge) IsEdge() {}
+
+// マッチングパターン種別（※要件次第で「前方一致」や「後方一致」も追加）
+type MatchingPattern string
+
+const (
+	// 部分一致
+	MatchingPatternPartialMatch MatchingPattern = "PARTIAL_MATCH"
+	// 完全一致
+	MatchingPatternExactMatch MatchingPattern = "EXACT_MATCH"
+)
+
+var AllMatchingPattern = []MatchingPattern{
+	MatchingPatternPartialMatch,
+	MatchingPatternExactMatch,
+}
+
+func (e MatchingPattern) IsValid() bool {
+	switch e {
+	case MatchingPatternPartialMatch, MatchingPatternExactMatch:
+		return true
+	}
+	return false
+}
+
+func (e MatchingPattern) String() string {
+	return string(e)
+}
+
+func (e *MatchingPattern) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = MatchingPattern(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid MatchingPattern", str)
+	}
+	return nil
+}
+
+func (e MatchingPattern) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+// 並べ替え方向
+type OrderDirection string
+
+const (
+	// 昇順
+	OrderDirectionAsc OrderDirection = "ASC"
+	// 降順
+	OrderDirectionDesc OrderDirection = "DESC"
+)
+
+var AllOrderDirection = []OrderDirection{
+	OrderDirectionAsc,
+	OrderDirectionDesc,
+}
+
+func (e OrderDirection) IsValid() bool {
+	switch e {
+	case OrderDirectionAsc, OrderDirectionDesc:
+		return true
+	}
+	return false
+}
+
+func (e OrderDirection) String() string {
+	return string(e)
+}
+
+func (e *OrderDirection) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = OrderDirection(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid OrderDirection", str)
+	}
+	return nil
+}
+
+func (e OrderDirection) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+// TODO並べ替えキー
+type TodoOrderKey string
+
+const (
+	// TODO
+	TodoOrderKeyText TodoOrderKey = "TEXT"
+	// 済みフラグ
+	TodoOrderKeyDone TodoOrderKey = "DONE"
+	// 作成日時（初期表示時のデフォルト）
+	TodoOrderKeyCreatedAt TodoOrderKey = "CREATED_AT"
+	// ユーザー名
+	TodoOrderKeyUserName TodoOrderKey = "USER_NAME"
+)
+
+var AllTodoOrderKey = []TodoOrderKey{
+	TodoOrderKeyText,
+	TodoOrderKeyDone,
+	TodoOrderKeyCreatedAt,
+	TodoOrderKeyUserName,
+}
+
+func (e TodoOrderKey) IsValid() bool {
+	switch e {
+	case TodoOrderKeyText, TodoOrderKeyDone, TodoOrderKeyCreatedAt, TodoOrderKeyUserName:
+		return true
+	}
+	return false
+}
+
+func (e TodoOrderKey) String() string {
+	return string(e)
+}
+
+func (e *TodoOrderKey) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TodoOrderKey(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TodoOrderKey", str)
+	}
+	return nil
+}
+
+func (e TodoOrderKey) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }

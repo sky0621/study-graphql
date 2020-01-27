@@ -5,14 +5,12 @@ import (
 	"errors"
 	"log"
 
+	"github.com/sky0621/study-graphql/src/backend/database"
 	"github.com/sky0621/study-graphql/src/backend/util"
 
-	"github.com/sky0621/study-graphql/src/backend/database"
-
 	"github.com/jinzhu/gorm"
-
 	"github.com/sky0621/study-graphql/src/backend/models"
-) // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
+)
 
 // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
 
@@ -35,6 +33,9 @@ func (r *Resolver) User() UserResolver {
 
 type mutationResolver struct{ *Resolver }
 
+func (r *mutationResolver) Noop(ctx context.Context, input *NoopInput) (*NoopPayload, error) {
+	panic("not implemented")
+}
 func (r *mutationResolver) CreateTodo(ctx context.Context, input NewTodo) (string, error) {
 	log.Printf("[mutationResolver.CreateTodo] input: %#v", input)
 	id := util.CreateUniqueID()
@@ -49,7 +50,6 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input NewTodo) (strin
 	}
 	return id, nil
 }
-
 func (r *mutationResolver) CreateUser(ctx context.Context, input NewUser) (string, error) {
 	log.Printf("[mutationResolver.CreateUser] input: %#v", input)
 	id := util.CreateUniqueID()
@@ -65,6 +65,9 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input NewUser) (strin
 
 type queryResolver struct{ *Resolver }
 
+func (r *queryResolver) Node(ctx context.Context, id string) (Node, error) {
+	panic("not implemented")
+}
 func (r *queryResolver) Todos(ctx context.Context) ([]*models.Todo, error) {
 	log.Println("[queryResolver.Todos]")
 	todos, err := database.NewTodoDao(r.DB).FindAll()
@@ -82,7 +85,6 @@ func (r *queryResolver) Todos(ctx context.Context) ([]*models.Todo, error) {
 	}
 	return results, nil
 }
-
 func (r *queryResolver) Todo(ctx context.Context, id string) (*models.Todo, error) {
 	log.Printf("[queryResolver.Todo] id: %s", id)
 	todo, err := database.NewTodoDao(r.DB).FindOne(id)
@@ -98,7 +100,9 @@ func (r *queryResolver) Todo(ctx context.Context, id string) (*models.Todo, erro
 		Done: todo.Done,
 	}, nil
 }
-
+func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *TextFilterCondition, pageCondition *PageCondition, edgeOrder *EdgeOrder) (*TodoConnection, error) {
+	panic("not implemented")
+}
 func (r *queryResolver) Users(ctx context.Context) ([]*models.User, error) {
 	log.Println("[queryResolver.Users]")
 	users, err := database.NewUserDao(r.DB).FindAll()
@@ -114,7 +118,6 @@ func (r *queryResolver) Users(ctx context.Context) ([]*models.User, error) {
 	}
 	return results, nil
 }
-
 func (r *queryResolver) User(ctx context.Context, id string) (*models.User, error) {
 	log.Printf("[queryResolver.User] id: %s", id)
 	user, err := database.NewUserDao(r.DB).FindOne(id)
