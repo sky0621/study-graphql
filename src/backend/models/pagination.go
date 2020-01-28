@@ -1,5 +1,7 @@
 package models
 
+import "math"
+
 // ページング条件
 type PageCondition struct {
 	// 前ページ遷移条件
@@ -10,6 +12,35 @@ type PageCondition struct {
 	NowPageNo int `json:"nowPageNo"`
 	// １ページ表示件数
 	InitialLimit *int `json:"initialLimit"`
+}
+
+func (c *PageCondition) TotalPage(totalCount int64) int64 {
+	if c == nil {
+		return 0
+	}
+	if c.InitialLimit == nil {
+		return 0
+	}
+	return int64(math.Ceil(float64(totalCount) / float64(*c.InitialLimit)))
+}
+
+func (c *PageCondition) MoveToPageNo() int {
+	if c == nil {
+		return 1 // 想定外のため初期ページ
+	}
+	if c.Backward == nil && c.Forward == nil {
+		return c.NowPageNo // 前にも後ろにも遷移しないので
+	}
+	if c.Backward != nil {
+		if c.NowPageNo <= 2 {
+			return 1
+		}
+		return c.NowPageNo - 1
+	}
+	if c.Forward != nil {
+		return c.NowPageNo + 1
+	}
+	return 1 // 想定外のため初期ページ
 }
 
 // 前ページ遷移条件
