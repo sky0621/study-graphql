@@ -13,6 +13,11 @@ func (u *User) TableName() string {
 	return "user"
 }
 
+// Tableを実装するマーカーインタフェース
+func (u *User) IsTable() bool {
+	return true
+}
+
 type UserDao interface {
 	InsertOne(u *User) error
 	FindAll() ([]*User, error)

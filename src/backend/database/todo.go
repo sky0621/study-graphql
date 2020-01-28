@@ -17,8 +17,13 @@ type Todo struct {
 	UserID    string    `gorm:"column:user_id"`
 }
 
-func (u *Todo) TableName() string {
+func (t *Todo) TableName() string {
 	return "todo"
+}
+
+// Tableを実装するマーカーインタフェース
+func (t *Todo) IsTable() bool {
+	return true
 }
 
 type TodoDao interface {
@@ -85,16 +90,24 @@ func (d *todoDao) CountByTextFilter(filterWord *models.TextFilterCondition) (int
 	}
 
 	// デフォルトは部分一致
-	conditionStr := "%" + filterWord.FilterWord + "%"
+	matchStr := "%" + filterWord.FilterWord + "%"
 	if filterWord.MatchingPattern != nil && *filterWord.MatchingPattern == models.MatchingPatternExactMatch {
-		conditionStr = filterWord.FilterWord
+		matchStr = filterWord.FilterWord
 	}
 
-	where := fmt.Sprintf("")
+	todo := TableName(&Todo{})
+	user := TableName(&User{})
 
 	var cnt int64
-	if err := d.db.Model(&Todo{}).Where(where).Count(&cnt).Error; err != nil {
-		return 0, err
+
+	// MEMO: ある程度複雑になったら頑張らずに db.Row() で生SQLを書く方が保守性は高いかもしれない。（メソッド使っても生SQL部分は存在するし）
+	res := d.db.Table(todo).
+		Joins(fmt.Sprintf("INNER JOIN %s ON %s.id = %s.user_id", user, user, todo)).
+		Where(fmt.Sprintf("%s.text LIKE '%s'", todo, matchStr)).
+		Or(fmt.Sprintf("%s.name LIKE '%s'", user, matchStr)).
+		Count(&cnt)
+	if res.Error != nil {
+		return 0, res.Error
 	}
 
 	return cnt, nil

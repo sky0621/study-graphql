@@ -1723,10 +1723,10 @@ func (ec *executionContext) _TodoConnection_totalCount(ctx context.Context, fiel
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(int64)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNInt2int(ctx, field.Selections, res)
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TodoEdge_node(ctx context.Context, field graphql.CollectedField, obj *models.TodoEdge) (ret graphql.Marshaler) {

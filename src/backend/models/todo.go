@@ -19,6 +19,8 @@ type Todo struct {
 	User *User `json:"user"`
 }
 
+func (t *Todo) IsNode() {}
+
 // TODO並べ替えキー
 type TodoOrderKey string
 
@@ -76,7 +78,7 @@ type TodoConnection struct {
 	// 検索結果一覧（※カーソル情報を含む）
 	Edges []*TodoEdge `json:"edges"`
 	// 検索結果の全件数
-	TotalCount int `json:"totalCount"`
+	TotalCount int64 `json:"totalCount"`
 }
 
 func (TodoConnection) IsConnection() {}

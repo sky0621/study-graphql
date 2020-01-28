@@ -99,10 +99,14 @@ func (r *queryResolver) Todo(ctx context.Context, id string) (*models.Todo, erro
 }
 func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *models.TextFilterCondition, pageCondition *models.PageCondition, edgeOrder *models.EdgeOrder) (*models.TodoConnection, error) {
 	log.Println("[queryResolver.TodoConnection]")
+	dao := database.NewTodoDao(r.DB)
 	/*
 	 * 検索条件に合致する全件数を取得
 	 */
-	totalCount := 0
+	totalCount, err := dao.CountByTextFilter(filterWord)
+	if err != nil {
+		return nil, err
+	}
 
 	edges := []*models.TodoEdge{}
 
