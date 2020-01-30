@@ -37,12 +37,10 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input NewTodo) (strin
 	log.Printf("[mutationResolver.CreateTodo] input: %#v", input)
 	id := util.CreateUniqueID()
 	err := database.NewTodoDao(r.DB).InsertOne(ctx, &database.Todo{
-		ID:   id,
-		Text: input.Text,
-		Done: false,
-		User: database.User{
-			ID: input.UserID,
-		},
+		ID:     id,
+		Text:   input.Text,
+		Done:   false,
+		UserID: input.UserID,
 	})
 	if err != nil {
 		return "", err
@@ -101,7 +99,9 @@ func (r *queryResolver) Todo(ctx context.Context, id string) (*models.Todo, erro
 }
 func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *models.TextFilterCondition, pageCondition *models.PageCondition, edgeOrder *models.EdgeOrder) (*models.TodoConnection, error) {
 	log.Println("[queryResolver.TodoConnection]")
+
 	dao := database.NewTodoDao(r.DB)
+
 	/*
 	 * 検索条件に合致する全件数を取得
 	 */
@@ -110,11 +110,7 @@ func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *models.T
 		return nil, err
 	}
 	if totalCount == 0 {
-		return &models.TodoConnection{
-			PageInfo:   &models.PageInfo{},
-			Edges:      []*models.TodoEdge{},
-			TotalCount: 0,
-		}, nil
+		return models.EmptyTodoConnection(), nil
 	}
 
 	// 検索結果全件数と１ページあたりの表示件数から、今回の検索による総ページ数を算出
@@ -134,11 +130,7 @@ func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *models.T
 		return nil, err
 	}
 	if todos == nil || len(todos) == 0 {
-		return &models.TodoConnection{
-			PageInfo:   &models.PageInfo{},
-			Edges:      []*models.TodoEdge{},
-			TotalCount: 0,
-		}, nil
+		return models.EmptyTodoConnection(), nil
 	}
 
 	var edges []*models.TodoEdge
@@ -155,8 +147,8 @@ func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *models.T
 				Done:      todo.Done,
 				CreatedAt: todo.CreatedAt.Unix(),
 				User: &models.User{
-					ID:   todo.User.ID,
-					Name: todo.User.Name,
+					ID:   todo.UserID,
+					Name: todo.UserName,
 				},
 			},
 		})

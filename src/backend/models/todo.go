@@ -71,6 +71,14 @@ func (e TodoOrderKey) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
+func EmptyTodoConnection() *TodoConnection {
+	return &TodoConnection{
+		PageInfo:   &PageInfo{},
+		Edges:      []*TodoEdge{},
+		TotalCount: 0,
+	}
+}
+
 // ページングを伴う結果返却用
 type TodoConnection struct {
 	// ページ情報

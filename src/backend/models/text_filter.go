@@ -14,6 +14,14 @@ type TextFilterCondition struct {
 	MatchingPattern *MatchingPattern `json:"matchingPattern"`
 }
 
+func (c *TextFilterCondition) NoFilter() bool {
+	return c == nil || c.FilterWord == ""
+}
+
+func (c *TextFilterCondition) ExistsFilter() bool {
+	return !c.NoFilter()
+}
+
 // マッチングパターン種別（※要件次第で「前方一致」や「後方一致」も追加）
 type MatchingPattern string
 

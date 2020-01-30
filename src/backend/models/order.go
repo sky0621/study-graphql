@@ -14,6 +14,14 @@ type EdgeOrder struct {
 	Direction OrderDirection `json:"direction"`
 }
 
+func (o *EdgeOrder) NoSort() bool {
+	return o == nil
+}
+
+func (o *EdgeOrder) ExistsSort() bool {
+	return !o.NoSort()
+}
+
 // 並べ替えのキー
 // 汎用的な構造にしたいが以下はGraphQLの仕様として不可だった。
 // ・enum・・・汎化機能がない。

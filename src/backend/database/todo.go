@@ -14,7 +14,10 @@ type Todo struct {
 	Text      string    `gorm:"column:text"`
 	Done      bool      `gorm:"column:done"`
 	CreatedAt time.Time `gorm:"column:created_at"`
-	User      User      `gorm:"column:user"`
+	// MEMO: 入れ子構造に対してSELECT結果をよしなにマッピングしてくれるかと思ったけどダメだった。
+	//User      User      `gorm:"column:user"`
+	UserID   string `gorm:"column:user_id"`
+	UserName string `gorm:"column:user_name"`
 }
 
 func (t *Todo) TableName() string {
@@ -116,7 +119,65 @@ func (d *todoDao) CountByTextFilter(ctx context.Context, filterWord *models.Text
 }
 
 func (d *todoDao) FindByCondition(ctx context.Context, filterWord *models.TextFilterCondition, pageCondition *models.PageCondition, edgeOrder *models.EdgeOrder) ([]*Todo, error) {
+	/*
+	 * 文字列フィルタ条件の有無、ページング条件の有無、並べ替え条件の有無の組み合わせによってSQLが変わる。
+	 */
+	// 組み合わせパターン別にSQL実行
+	/*
+	 * 文字列フィルタ無し
+	 * ページング無し
+	 * 並べ替え無し
+	 */
+	if filterWord.NoFilter() && pageCondition.NoPaging() && edgeOrder.NoSort() {
+		var results []*Todo
+		if err := d.db.Model(&Todo{}).Find(&results).Error; err != nil {
+			return nil, err
+		}
+		return results, nil
+	}
 
-	// FIXME:
-	return nil, nil
+	/*
+	 * 文字列フィルタ無し
+	 * ページング有り
+	 * 並べ替え無し
+	 */
+	if filterWord.NoFilter() && pageCondition.ExistsPaging() && edgeOrder.NoSort() {
+		// FIXME:
+	}
+
+	// --------------------------------------
+	// 上記のパターン別実装が終われば、以下は不要。
+	// --------------------------------------
+
+	var results []*Todo
+	// 絞り込み無しのパターン
+	if filterWord == nil || filterWord.FilterWord == "" {
+		if err := d.db.Model(&Todo{}).Find(&results).Error; err != nil {
+			return nil, err
+		}
+		return results, nil
+	}
+
+	// デフォルトは部分一致
+	matchStr := "%" + filterWord.FilterWord + "%"
+	if filterWord.MatchingPattern != nil && *filterWord.MatchingPattern == models.MatchingPatternExactMatch {
+		matchStr = filterWord.FilterWord
+	}
+
+	todo := TableName(&Todo{})
+	user := TableName(&User{})
+
+	// MEMO: ある程度複雑になったら頑張らずに db.Row() で生SQLを書く方が保守性は高いかもしれない。（メソッド使っても生SQL部分は存在するし）
+	res := d.db.
+		Select("todo.id, todo.text, todo.done, todo.created_at, user.id AS user_id, user.name AS user_name").
+		Table(todo).
+		Joins(InnerJoin(user) + On("%s.id = %s.user_id", user, todo)).
+		Where(Col(todo, "text").Like(matchStr)).
+		Or(Col(user, "name").Like(matchStr)).
+		Find(&results)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	return results, nil
 }
