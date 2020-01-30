@@ -22,6 +22,20 @@ func (c *TextFilterCondition) ExistsFilter() bool {
 	return !c.NoFilter()
 }
 
+func (c *TextFilterCondition) MatchString() string {
+	if c == nil {
+		return ""
+	}
+	matchStr := "%" + c.FilterWord + "%"
+	if c.MatchingPattern == nil {
+		return matchStr
+	}
+	if *c.MatchingPattern == MatchingPatternExactMatch {
+		matchStr = c.FilterWord
+	}
+	return matchStr
+}
+
 // マッチングパターン種別（※要件次第で「前方一致」や「後方一致」も追加）
 type MatchingPattern string
 

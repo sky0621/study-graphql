@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/sky0621/study-graphql/src/backend/util"
+
 	"github.com/sky0621/study-graphql/src/backend/models"
 
 	"github.com/jinzhu/gorm"
@@ -137,47 +139,91 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterWord *models.TextFi
 	}
 
 	/*
-	 * 文字列フィルタ無し
-	 * ページング有り
+	 * 文字列フィルタ"有り"
+	 * ページング無し
 	 * 並べ替え無し
 	 */
-	if filterWord.NoFilter() && pageCondition.ExistsPaging() && edgeOrder.NoSort() {
-		// FIXME:
-	}
+	if filterWord.ExistsFilter() && pageCondition.NoPaging() && edgeOrder.NoSort() {
+		// デフォルトは部分一致
+		matchStr := filterWord.MatchString()
 
-	// --------------------------------------
-	// 上記のパターン別実装が終われば、以下は不要。
-	// --------------------------------------
+		todo := TableName(&Todo{})
+		user := TableName(&User{})
 
-	var results []*Todo
-	// 絞り込み無しのパターン
-	if filterWord == nil || filterWord.FilterWord == "" {
-		if err := d.db.Model(&Todo{}).Find(&results).Error; err != nil {
-			return nil, err
+		var results []*Todo
+		res := d.db.
+			Table(todo).
+			Joins(InnerJoin(user) + On("%s.id = %s.user_id", user, todo)).
+			Where(Col(todo, "text").Like(matchStr)).
+			Or(Col(user, "name").Like(matchStr)).
+			Find(&results)
+		if res.Error != nil {
+			return nil, res.Error
 		}
+
 		return results, nil
 	}
 
-	// デフォルトは部分一致
-	matchStr := "%" + filterWord.FilterWord + "%"
-	if filterWord.MatchingPattern != nil && *filterWord.MatchingPattern == models.MatchingPatternExactMatch {
-		matchStr = filterWord.FilterWord
+	/*
+	 * 文字列フィルタ無し
+	 * ページング"有り"
+	 * 並べ替え無し
+	 */
+	if filterWord.NoFilter() && pageCondition.ExistsPaging() && edgeOrder.NoSort() {
+		// 前ページ遷移指示
+		if pageCondition.Backward != nil {
+			// このカーソルをデコードした結果から todo のPKを取得してPK検索。その結果より前のレコードを検索対象とする
+			cursor := pageCondition.Backward.Before
+			if cursor == nil {
+				return nil, nil
+			}
+			_, todoID, err := util.DecodeCursor(*cursor)
+			if err != nil {
+				return nil, err
+			}
+
+			// 比較対象カーソルに該当するレコードを取得
+			var target *Todo
+			if err := d.db.Where(&Todo{ID: todoID}).First(&target).Error; err != nil {
+				return nil, err
+			}
+
+			// 並べ替え指示なしの場合は、デフォルトで「作成日時」の”降順”を指定
+
+			todo := TableName(&Todo{})
+			user := TableName(&User{})
+
+			var results []*Todo
+			res := d.db.
+				Table(todo).
+				Joins(InnerJoin(user)+On("%s.id = %s.user_id", user, todo)).
+				Where("todo.created_at > ?", target.CreatedAt).
+				Order("created_at DESC").
+				Limit(pageCondition.Backward.Last).
+				Find(&results)
+			if res.Error != nil {
+				return nil, res.Error
+			}
+
+			return results, nil
+		}
+		// 次ページ遷移指示
+		if pageCondition.Forward != nil {
+			// このカーソルより後のレコードを検索対象とする
+			//cursor := pageCondition.Forward.After
+		}
 	}
 
-	todo := TableName(&Todo{})
-	user := TableName(&User{})
-
-	// MEMO: ある程度複雑になったら頑張らずに db.Row() で生SQLを書く方が保守性は高いかもしれない。（メソッド使っても生SQL部分は存在するし）
-	res := d.db.
-		Select("todo.id, todo.text, todo.done, todo.created_at, user.id AS user_id, user.name AS user_name").
-		Table(todo).
-		Joins(InnerJoin(user) + On("%s.id = %s.user_id", user, todo)).
-		Where(Col(todo, "text").Like(matchStr)).
-		Or(Col(user, "name").Like(matchStr)).
-		Find(&results)
-	if res.Error != nil {
-		return nil, res.Error
+	/*
+	 * 文字列フィルタ無し
+	 * ページング無し
+	 * 並べ替え"有り"
+	 */
+	if filterWord.NoFilter() && pageCondition.NoPaging() && edgeOrder.ExistsSort() {
+		// FIXME:
 	}
 
-	return results, nil
+	// FIXME: その他のパターン
+
+	return nil, nil
 }
