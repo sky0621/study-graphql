@@ -37,10 +37,12 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input NewTodo) (strin
 	log.Printf("[mutationResolver.CreateTodo] input: %#v", input)
 	id := util.CreateUniqueID()
 	err := database.NewTodoDao(r.DB).InsertOne(ctx, &database.Todo{
-		ID:     id,
-		Text:   input.Text,
-		Done:   false,
-		UserID: input.UserID,
+		ID:   id,
+		Text: input.Text,
+		Done: false,
+		User: database.User{
+			ID: input.UserID,
+		},
 	})
 	if err != nil {
 		return "", err
@@ -97,7 +99,11 @@ func (r *queryResolver) Todo(ctx context.Context, id string) (*models.Todo, erro
 		Done: todo.Done,
 	}, nil
 }
-func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *models.TextFilterCondition, pageCondition *models.PageCondition, edgeOrder *models.EdgeOrder) (*models.TodoConnection, error) {
+func (r *queryResolver) TodoConnection(ctx context.Context,
+	filterWord *models.TextFilterCondition,
+	pageCondition *models.PageCondition,
+	edgeOrder *models.EdgeOrder) (*models.TodoConnection, error) {
+
 	log.Println("[queryResolver.TodoConnection]")
 
 	dao := database.NewTodoDao(r.DB)
@@ -125,7 +131,7 @@ func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *models.T
 	/*
 	 * 検索条件、ページング条件、ソート条件に合致する結果を取得
 	 */
-	todos, err := dao.FindByCondition(ctx, filterWord, pageCondition, edgeOrder)
+	todos, err := dao.FindByCondition(ctx, filterWord, pageCondition, getOrder(edgeOrder))
 	if err != nil {
 		return nil, err
 	}
@@ -147,8 +153,8 @@ func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *models.T
 				Done:      todo.Done,
 				CreatedAt: todo.CreatedAt.Unix(),
 				User: &models.User{
-					ID:   todo.UserID,
-					Name: todo.UserName,
+					ID:   todo.User.ID,
+					Name: todo.User.Name,
 				},
 			},
 		})
@@ -170,6 +176,21 @@ func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *models.T
 		Edges:      edges,
 		TotalCount: totalCount,
 	}, nil
+}
+
+func getOrder(edgeOrder *models.EdgeOrder) *models.EdgeOrder {
+	// 並べ替えは未指定時にデフォルト値を与えておかないとページングとの組み合わせが成り立たないので、ここでセット
+	var order *models.EdgeOrder
+	if edgeOrder == nil {
+		createdAt := models.TodoOrderKeyCreatedAt
+		order = &models.EdgeOrder{
+			Key:       &models.OrderKey{TodoOrderKey: &createdAt},
+			Direction: models.OrderDirectionDesc,
+		}
+	} else {
+		order = edgeOrder
+	}
+	return order
 }
 
 func (r *queryResolver) Users(ctx context.Context) ([]*models.User, error) {

@@ -14,12 +14,14 @@ type PageCondition struct {
 	InitialLimit *int `json:"initialLimit"`
 }
 
-func (c *PageCondition) NoPaging() bool {
-	return c == nil || (c.Backward == nil && c.Forward == nil)
-}
-
 func (c *PageCondition) ExistsPaging() bool {
-	return !c.NoPaging()
+	if c == nil {
+		return false
+	}
+	if c.Backward == nil && c.Forward == nil {
+		return false
+	}
+	return true
 }
 
 func (c *PageCondition) TotalPage(totalCount int64) int64 {

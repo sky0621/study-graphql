@@ -14,12 +14,17 @@ type TextFilterCondition struct {
 	MatchingPattern *MatchingPattern `json:"matchingPattern"`
 }
 
-func (c *TextFilterCondition) NoFilter() bool {
-	return c == nil || c.FilterWord == ""
-}
-
 func (c *TextFilterCondition) ExistsFilter() bool {
-	return !c.NoFilter()
+	if c == nil {
+		return false
+	}
+	if c.FilterWord == "" {
+		return false
+	}
+	if c.MatchingPattern == nil {
+		return false
+	}
+	return true
 }
 
 func (c *TextFilterCondition) MatchString() string {

@@ -71,6 +71,16 @@ func (e TodoOrderKey) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
+func (e *TodoOrderKey) Val() string {
+	if e == nil {
+		return ""
+	}
+	if !e.IsValid() {
+		return ""
+	}
+	return e.String()
+}
+
 func EmptyTodoConnection() *TodoConnection {
 	return &TodoConnection{
 		PageInfo:   &PageInfo{},

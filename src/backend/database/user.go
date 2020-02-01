@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jinzhu/gorm"
 )
@@ -9,6 +10,11 @@ import (
 type User struct {
 	ID   string `gorm:"column:id;primary_key"`
 	Name string `gorm:"column:name"`
+}
+
+func (u *User) Columns() string {
+	tn := u.TableName()
+	return fmt.Sprintf("%s.id, %s.name", tn, tn)
 }
 
 func (u *User) TableName() string {

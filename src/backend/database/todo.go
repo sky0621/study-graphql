@@ -2,6 +2,8 @@ package database
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/sky0621/study-graphql/src/backend/util"
@@ -16,10 +18,12 @@ type Todo struct {
 	Text      string    `gorm:"column:text"`
 	Done      bool      `gorm:"column:done"`
 	CreatedAt time.Time `gorm:"column:created_at"`
-	// MEMO: 入れ子構造に対してSELECT結果をよしなにマッピングしてくれるかと思ったけどダメだった。
-	//User      User      `gorm:"column:user"`
-	UserID   string `gorm:"column:user_id"`
-	UserName string `gorm:"column:user_name"`
+	User
+}
+
+func (t *Todo) Columns() string {
+	tn := t.TableName()
+	return fmt.Sprintf("%s.id, %s.text, %s.done, %s.created_at", tn, tn, tn, tn)
 }
 
 func (t *Todo) TableName() string {
@@ -120,80 +124,82 @@ func (d *todoDao) CountByTextFilter(ctx context.Context, filterWord *models.Text
 	return cnt, nil
 }
 
-func (d *todoDao) FindByCondition(ctx context.Context, filterWord *models.TextFilterCondition, pageCondition *models.PageCondition, edgeOrder *models.EdgeOrder) ([]*Todo, error) {
+func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.TextFilterCondition, pageCondition *models.PageCondition, edgeOrder *models.EdgeOrder) ([]*Todo, error) {
+	// todoテーブルのテーブル名
+	todo := TableName(&Todo{})
+	// userテーブルのテーブル名
+	user := TableName(&User{})
+
+	// 条件によらず固定の部分
+	base := d.db.Table(todo).
+		Joins(InnerJoin(user) + On("%s.id = %s.user_id", user, todo)).
+		Select((&Todo{}).Columns() + ", " + (&User{}).Columns())
+
 	/*
-	 * 文字列フィルタ条件の有無、ページング条件の有無、並べ替え条件の有無の組み合わせによってSQLが変わる。
+	 * 文字列フィルタ条件が指定されていた場合
 	 */
-	// 組み合わせパターン別にSQL実行
-	/*
-	 * 文字列フィルタ無し
-	 * ページング無し
-	 * 並べ替え無し
-	 */
-	if filterWord.NoFilter() && pageCondition.NoPaging() && edgeOrder.NoSort() {
-		var results []*Todo
-		if err := d.db.Model(&Todo{}).Find(&results).Error; err != nil {
-			return nil, err
-		}
-		return results, nil
+	if filterCondition.ExistsFilter() {
+		// デフォルトは部分一致(例：「テスト」 -> 「%テスト%」)
+		matchStr := filterCondition.MatchString()
+		// todoテーブルのtextカラムかuserテーブルのnameカラムとLIKE検索
+		base = base.Where(Col(todo, "text").Like(matchStr)).Or(Col(user, "name").Like(matchStr))
 	}
 
 	/*
-	 * 文字列フィルタ"有り"
-	 * ページング無し
-	 * 並べ替え無し
+	 * ページング条件が指定されていた場合
+	 * （※並べ替えのキー項目と昇順・降順の指定がないとページング不可のため、if文の判定に追加）
 	 */
-	if filterWord.ExistsFilter() && pageCondition.NoPaging() && edgeOrder.NoSort() {
-		// デフォルトは部分一致
-		matchStr := filterWord.MatchString()
+	if pageCondition.ExistsPaging() && edgeOrder.ExistsOrder() {
+		/*
+		 * どの項目で並べ替えをしているかによって、ページ遷移のために比較対象レコードのどのカラムと比較するかが決まる。
+		 * また、比較対象レコードのカラムと比較する時、当該カラムの昇順で並んでいるか降順で並んでいるかによって「 > 」にするか「 < 」にするかが変わる。
+		 *
+		 * 【説明】
+		 * 　1 〜 17 までの数値(カラム名は「num」とする)が１ページ５件”昇順”で並んでいて、現在２ページ目を表示していたとする。
+		 *
+		 * 　★ 7, 8, 9, 10, 11 の昇順で並んでいる場合
+		 * 　　次ページに遷移する場合、12, 13, 14, 15, 16 を取得する条件にする必要がある。
+		 * 　　pageCondition.Forward.Afterが、今表示している一覧の"最終行"を示すカーソルなので、そこから「 11 」という数値が取得できる。
+		 * 　　結果、「num > 11」を５件取得する条件を追加すればいい。
+		 *
+		 * 　　逆に、前ページに遷移する場合、2, 3, 4, 5, 6 を取得する条件にする必要がある。
+		 * 　　pageCondition.Backward.Beforeが、今表示している一覧の"１行目"を示すカーソルなので、そこから「 7 」という数値が取得できる。
+		 * 　　結果、「num < 7」を５件取得する条件を追加すればいい。
+		 * 　　※ただし、並べ替え順を”昇順”のままにすると、小さいものから５件取得する条件である都合上、意図に反して 1, 2, 3, 4, 5 が取得される。
+		 * 　　　そのため、いったん”降順”で並べ替えて取得した後、再度、”昇順”で並べ替え直す必要がある。
+		 *
+		 * 　★ 10, 9, 8, 7, 6 の降順で並んでいる場合
+		 * 　　次ページに遷移する場合、15, 14, 13, 12, 11 を取得する条件にする必要がある。
+		 * 　　pageCondition.Forward.Afterが、今表示している一覧の"１行目"を示すカーソルなので、そこから「 10 」という数値が取得できる。
+		 * 　　結果、「num > 10」を５件取得する条件を追加すればいい。
+		 * 　　※ただし、並べ替え順を”降順”のままにすると、大きいものから５件取得する条件である都合上、意図に反して 16, 15, 14, 13, 12 が取得される。
+		 * 　　　そのため、いったん”昇順”で並べ替えて取得した後、再度、”降順”で並べ替え直す必要がある。
+		 *
+		 * 　　逆に、前ページに遷移する場合、5, 4, 3, 2, 1 を取得する条件にする必要がある。
+		 * 　　pageCondition.Backward.Beforeが、今表示している一覧の"最終行"を示すカーソルなので、そこから「 6 」という数値が取得できる。
+		 * 　　結果、「num < 6」を５件取得する条件を追加すればいい。
+		 */
+		col := ""
+		switch *edgeOrder.Key.TodoOrderKey {
+		case models.TodoOrderKeyText:
+			base = base.Where(Col(todo, "text") + " " + edgeOrder.Direction.String())
+		case models.TodoOrderKeyDone:
+		case models.TodoOrderKeyCreatedAt:
+		case models.TodoOrderKeyUserName:
+		default:
 
-		todo := TableName(&Todo{})
-		user := TableName(&User{})
-
-		var results []*Todo
-		res := d.db.
-			Table(todo).
-			Joins(InnerJoin(user) + On("%s.id = %s.user_id", user, todo)).
-			Where(Col(todo, "text").Like(matchStr)).
-			Or(Col(user, "name").Like(matchStr)).
-			Find(&results)
-		if res.Error != nil {
-			return nil, res.Error
 		}
 
-		return results, nil
-	}
-
-	/*
-	 * 文字列フィルタ無し
-	 * ページング"有り"
-	 * 並べ替え無し
-	 */
-	if filterWord.NoFilter() && pageCondition.ExistsPaging() && edgeOrder.NoSort() {
-		// 前ページ遷移指示
+		/*
+		 * 前ページ遷移指示
+		 */
 		if pageCondition.Backward != nil {
-			// このカーソルをデコードした結果から todo のPKを取得してPK検索。その結果より前のレコードを検索対象とする
-			cursor := pageCondition.Backward.Before
-			if cursor == nil {
-				return nil, nil
-			}
-			_, todoID, err := util.DecodeCursor(*cursor)
+			// 現在表示ページの１レコード目を表すカーソルから、todo(+user)レコードを取得
+			target, err := d.getCompareTarget(pageCondition.Backward.Before)
 			if err != nil {
 				return nil, err
 			}
 
-			// 比較対象カーソルに該当するレコードを取得
-			var target *Todo
-			if err := d.db.Where(&Todo{ID: todoID}).First(&target).Error; err != nil {
-				return nil, err
-			}
-
-			// 並べ替え指示なしの場合は、デフォルトで「作成日時」の”降順”を指定
-
-			todo := TableName(&Todo{})
-			user := TableName(&User{})
-
-			var results []*Todo
 			res := d.db.
 				Table(todo).
 				Joins(InnerJoin(user)+On("%s.id = %s.user_id", user, todo)).
@@ -207,23 +213,51 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterWord *models.TextFi
 
 			return results, nil
 		}
-		// 次ページ遷移指示
+
+		/*
+		 * 次ページ遷移指示
+		 */
 		if pageCondition.Forward != nil {
-			// このカーソルより後のレコードを検索対象とする
-			//cursor := pageCondition.Forward.After
+			// 現在表示ページの最終レコード目を表すカーソルから、todo(+user)レコードを取得
+			target, err := d.getCompareTarget(pageCondition.Forward.After)
+			if err != nil {
+				return nil, err
+			}
+
 		}
 	}
 
 	/*
-	 * 文字列フィルタ無し
-	 * ページング無し
-	 * 並べ替え"有り"
+	 * 並べ替え条件が指定されていた場合
 	 */
-	if filterWord.NoFilter() && pageCondition.NoPaging() && edgeOrder.ExistsSort() {
-		// FIXME:
+	if edgeOrder.ExistsOrder() {
+		orderKey := edgeOrder.Key.TodoOrderKey.Val()
+		if orderKey != "" {
+			// TODO: テーブル名のエイリアスを付けていないので同じカラムを持つテーブルを複数JOIN時に困る
+			base = base.Order(fmt.Sprintf("%s %s", orderKey, edgeOrder.Direction.String()))
+		}
 	}
 
-	// FIXME: その他のパターン
+	var results []*Todo
+	if err := base.Find(&results).Error; err != nil {
+		return nil, err
+	}
+	return results, nil
+}
 
-	return nil, nil
+func (d *todoDao) getCompareTarget(cursor *string) (*Todo, error) {
+	if cursor == nil {
+		return nil, errors.New("cursor is nil")
+	}
+	_, todoID, err := util.DecodeCursor(*cursor)
+	if err != nil {
+		return nil, err
+	}
+
+	// 比較対象カーソルに該当するレコードを取得
+	var target *Todo
+	if err := d.db.Where(&Todo{ID: todoID}).First(&target).Error; err != nil {
+		return nil, err
+	}
+	return target, nil
 }

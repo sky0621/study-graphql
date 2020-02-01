@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-// 並び替え条件
+// 並べ替え条件
 type EdgeOrder struct {
 	// 並べ替えキー項目
 	Key *OrderKey `json:"key"`
@@ -14,12 +14,8 @@ type EdgeOrder struct {
 	Direction OrderDirection `json:"direction"`
 }
 
-func (o *EdgeOrder) NoSort() bool {
-	return o == nil
-}
-
-func (o *EdgeOrder) ExistsSort() bool {
-	return !o.NoSort()
+func (o *EdgeOrder) ExistsOrder() bool {
+	return o != nil && o.Key != nil
 }
 
 // 並べ替えのキー

@@ -22,6 +22,18 @@ func Col(table, col string) c {
 	return c{col: fmt.Sprintf("%s.%s", table, col)}
 }
 
+func (r c) Val() string {
+	return r.col
+}
+
 func (r c) Like(matchStr string) string {
 	return r.col + fmt.Sprintf(" LIKE '%s'", matchStr)
+}
+
+func (r c) Upper() string {
+	return r.col + " > "
+}
+
+func (r c) Lower() string {
+	return r.col + " < "
 }
