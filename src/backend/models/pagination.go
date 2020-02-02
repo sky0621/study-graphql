@@ -18,10 +18,21 @@ func (c *PageCondition) ExistsPaging() bool {
 	if c == nil {
 		return false
 	}
-	if c.Backward == nil && c.Forward == nil {
+	return c.Backward != nil || c.Forward != nil
+}
+
+func (c *PageCondition) IsInitialPageView() bool {
+	if c == nil {
+		return true
+	}
+	return c.Backward == nil && c.Forward == nil
+}
+
+func (c *PageCondition) HasInitialLimit() bool {
+	if c == nil {
 		return false
 	}
-	return true
+	return c.InitialLimit != nil && *c.InitialLimit > 0
 }
 
 func (c *PageCondition) TotalPage(totalCount int64) int64 {

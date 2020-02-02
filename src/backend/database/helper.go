@@ -31,9 +31,11 @@ func (r *c) Like(matchStr string) string {
 }
 
 func (r *c) GreaterThan(target interface{}) string {
-	return fmt.Sprintf("%s > %v", r.col, target)
+	// TODO: time or string が前提になってしまっている。
+	return fmt.Sprintf("%s > '%v'", r.col, target)
 }
 
 func (r *c) LessThan(target interface{}) string {
-	return fmt.Sprintf("%s < %v", r.col, target)
+	// TODO: time or string が前提になってしまっている。
+	return fmt.Sprintf("%s < '%v'", r.col, target)
 }

@@ -163,6 +163,26 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.T
 	}
 
 	/*
+	 * ページング指定無しの初期ページビュー
+	 */
+	if pageCondition.IsInitialPageView() {
+		if pageCondition.HasInitialLimit() {
+			base = base.Limit(*pageCondition.InitialLimit)
+		}
+	}
+
+	/*
+	 * 並べ替え条件が指定されていた場合
+	 */
+	if edgeOrder.ExistsOrder() {
+		orderKey := edgeOrder.Key.TodoOrderKey.Val()
+		if orderKey != "" {
+			// TODO: テーブル名のエイリアスを付けていないので同じカラムを持つテーブルを複数JOIN時に困る
+			base = base.Order(fmt.Sprintf("%s %s", orderKey, edgeOrder.Direction.String()))
+		}
+	}
+
+	/*
 	 * ページング条件が指定されていた場合
 	 * （※並べ替えのキー項目と昇順・降順の指定がないとページング不可のため、if文の判定に追加）
 	 */
@@ -218,7 +238,8 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.T
 				if targetValue == nil {
 					return nil, errors.New("no target value")
 				}
-				base = d.db.Where(base.Where(col.LessThan(targetValue)).Order(col_DESC(edgeOrder)).Limit(pageCondition.Backward.Last).QueryExpr()).
+				subQuery := base.New()
+				base = base.Where(subQuery.Where(col.LessThan(targetValue)).Order(col_DESC(edgeOrder)).Limit(pageCondition.Backward.Last).SubQuery()).
 					Order(col_ASC(edgeOrder))
 			}
 		/*
@@ -265,17 +286,6 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.T
 		}
 	}
 
-	/*
-	 * 並べ替え条件が指定されていた場合
-	 */
-	if edgeOrder.ExistsOrder() {
-		orderKey := edgeOrder.Key.TodoOrderKey.Val()
-		if orderKey != "" {
-			// TODO: テーブル名のエイリアスを付けていないので同じカラムを持つテーブルを複数JOIN時に困る
-			base = base.Order(fmt.Sprintf("%s %s", orderKey, edgeOrder.Direction.String()))
-		}
-	}
-
 	var results []*Todo
 	if err := base.Find(&results).Error; err != nil {
 		return nil, err
@@ -293,11 +303,11 @@ func (d *todoDao) getCompareTarget(cursor *string) (*Todo, error) {
 	}
 
 	// 比較対象カーソルに該当するレコードを取得
-	var target *Todo
+	var target Todo
 	if err := d.db.Where(&Todo{ID: todoID}).First(&target).Error; err != nil {
 		return nil, err
 	}
-	return target, nil
+	return &target, nil
 }
 
 func getColumnNameByOrderKey(todoOrderKey models.TodoOrderKey) (*c, error) {
