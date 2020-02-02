@@ -150,80 +150,101 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.T
 	 * （※並べ替えのキー項目と昇順・降順の指定がないとページング不可のため、if文の判定に追加）
 	 */
 	if pageCondition.ExistsPaging() && edgeOrder.ExistsOrder() {
+		col, err := getColumnNameByOrderKey(*edgeOrder.Key.TodoOrderKey)
+		if err != nil {
+			return nil, err
+		}
 		/*
 		 * どの項目で並べ替えをしているかによって、ページ遷移のために比較対象レコードのどのカラムと比較するかが決まる。
 		 * また、比較対象レコードのカラムと比較する時、当該カラムの昇順で並んでいるか降順で並んでいるかによって「 > 」にするか「 < 」にするかが変わる。
 		 *
 		 * 【説明】
-		 * 　1 〜 17 までの数値(カラム名は「num」とする)が１ページ５件”昇順”で並んでいて、現在２ページ目を表示していたとする。
-		 *
-		 * 　★ 7, 8, 9, 10, 11 の昇順で並んでいる場合
-		 * 　　次ページに遷移する場合、12, 13, 14, 15, 16 を取得する条件にする必要がある。
-		 * 　　pageCondition.Forward.Afterが、今表示している一覧の"最終行"を示すカーソルなので、そこから「 11 」という数値が取得できる。
-		 * 　　結果、「num > 11」を５件取得する条件を追加すればいい。
-		 *
-		 * 　　逆に、前ページに遷移する場合、2, 3, 4, 5, 6 を取得する条件にする必要がある。
-		 * 　　pageCondition.Backward.Beforeが、今表示している一覧の"１行目"を示すカーソルなので、そこから「 7 」という数値が取得できる。
-		 * 　　結果、「num < 7」を５件取得する条件を追加すればいい。
-		 * 　　※ただし、並べ替え順を”昇順”のままにすると、小さいものから５件取得する条件である都合上、意図に反して 1, 2, 3, 4, 5 が取得される。
-		 * 　　　そのため、いったん”降順”で並べ替えて取得した後、再度、”昇順”で並べ替え直す必要がある。
-		 *
-		 * 　★ 10, 9, 8, 7, 6 の降順で並んでいる場合
-		 * 　　次ページに遷移する場合、15, 14, 13, 12, 11 を取得する条件にする必要がある。
-		 * 　　pageCondition.Forward.Afterが、今表示している一覧の"１行目"を示すカーソルなので、そこから「 10 」という数値が取得できる。
-		 * 　　結果、「num > 10」を５件取得する条件を追加すればいい。
-		 * 　　※ただし、並べ替え順を”降順”のままにすると、大きいものから５件取得する条件である都合上、意図に反して 16, 15, 14, 13, 12 が取得される。
-		 * 　　　そのため、いったん”昇順”で並べ替えて取得した後、再度、”降順”で並べ替え直す必要がある。
-		 *
-		 * 　　逆に、前ページに遷移する場合、5, 4, 3, 2, 1 を取得する条件にする必要がある。
-		 * 　　pageCondition.Backward.Beforeが、今表示している一覧の"最終行"を示すカーソルなので、そこから「 6 」という数値が取得できる。
-		 * 　　結果、「num < 6」を５件取得する条件を追加すればいい。
+		 * 　1 〜 17 までの数値(カラム名は「col」とする)が１ページ５件”昇順”で並んでいて、現在２ページ目を表示していたとする。
 		 */
-		col := ""
-		switch *edgeOrder.Key.TodoOrderKey {
-		case models.TodoOrderKeyText:
-			base = base.Where(Col(todo, "text") + " " + edgeOrder.Direction.String())
-		case models.TodoOrderKeyDone:
-		case models.TodoOrderKeyCreatedAt:
-		case models.TodoOrderKeyUserName:
-		default:
-
-		}
-
+		switch edgeOrder.Direction {
 		/*
-		 * 前ページ遷移指示
+		 *　★ 7, 8, 9, 10, 11 の昇順で並んでいる場合
 		 */
-		if pageCondition.Backward != nil {
-			// 現在表示ページの１レコード目を表すカーソルから、todo(+user)レコードを取得
-			target, err := d.getCompareTarget(pageCondition.Backward.Before)
-			if err != nil {
-				return nil, err
+		case models.OrderDirectionAsc:
+			/*
+			 * 次ページに遷移する場合、12, 13, 14, 15, 16 を取得する条件にする必要がある。
+			 * pageCondition.Forward.Afterが、今表示している一覧の"最終行"を示すカーソルなので、そこから「 11 」という数値が取得できる。
+			 * 結果、「col > 11」を５件取得する条件を追加すればいい。
+			 */
+			if pageCondition.Forward != nil {
+				// 「このレコードよりも後のレコードを取得」という条件に使うための比較対象レコードを取得
+				target, err := d.getCompareTarget(pageCondition.Forward.After)
+				if err != nil {
+					return nil, err
+				}
+				targetValue := getTargetValueByOrderKey(*edgeOrder.Key.TodoOrderKey, target)
+				if targetValue == nil {
+					return nil, errors.New("no target value")
+				}
+				base = base.Where(col.GreaterThan(targetValue)).Order(col_ASC(edgeOrder)).Limit(pageCondition.Forward.First)
 			}
 
-			res := d.db.
-				Table(todo).
-				Joins(InnerJoin(user)+On("%s.id = %s.user_id", user, todo)).
-				Where("todo.created_at > ?", target.CreatedAt).
-				Order("created_at DESC").
-				Limit(pageCondition.Backward.Last).
-				Find(&results)
-			if res.Error != nil {
-				return nil, res.Error
+			/*
+			 * 前ページに遷移する場合、2, 3, 4, 5, 6 を取得する条件にする必要がある。
+			 * pageCondition.Backward.Beforeが、今表示している一覧の"１行目"を示すカーソルなので、そこから「 7 」という数値が取得できる。
+			 * 結果、「num < 7」を５件取得する条件を追加すればいい。
+			 * ※ただし、並べ替え順を”昇順”のままにすると、小さいものから５件取得する条件である都合上、意図に反して 1, 2, 3, 4, 5 が取得される。
+			 *  そのため、いったん”降順”で並べ替えて取得した後、再度、”昇順”で並べ替え直す必要がある。
+			 */
+			if pageCondition.Backward != nil {
+				// 「このレコードよりも前のレコードを取得」という条件に使うための比較対象レコードを取得
+				target, err := d.getCompareTarget(pageCondition.Backward.Before)
+				if err != nil {
+					return nil, err
+				}
+				targetValue := getTargetValueByOrderKey(*edgeOrder.Key.TodoOrderKey, target)
+				if targetValue == nil {
+					return nil, errors.New("no target value")
+				}
+				base = d.db.Where(base.Where(col.LessThan(targetValue)).Order(col_DESC(edgeOrder)).Limit(pageCondition.Backward.Last).QueryExpr()).
+					Order(col_ASC(edgeOrder))
 			}
-
-			return results, nil
-		}
-
 		/*
-		 * 次ページ遷移指示
+		 *　★ 10, 9, 8, 7, 6 の降順で並んでいる場合
 		 */
-		if pageCondition.Forward != nil {
-			// 現在表示ページの最終レコード目を表すカーソルから、todo(+user)レコードを取得
-			target, err := d.getCompareTarget(pageCondition.Forward.After)
-			if err != nil {
-				return nil, err
+		case models.OrderDirectionDesc:
+			/*
+			 * 次ページに遷移する場合、15, 14, 13, 12, 11 を取得する条件にする必要がある。
+			 * pageCondition.Forward.Afterが、今表示している一覧の"１行目"を示すカーソルなので、そこから「 10 」という数値が取得できる。
+			 * 結果、「num > 10」を５件取得する条件を追加すればいい。
+			 * ※ただし、並べ替え順を”降順”のままにすると、大きいものから５件取得する条件である都合上、意図に反して 16, 15, 14, 13, 12 が取得される。
+			 *  そのため、いったん”昇順”で並べ替えて取得した後、再度、”降順”で並べ替え直す必要がある。
+			 */
+			if pageCondition.Forward != nil {
+				// 「このレコードよりも後のレコードを取得」という条件に使うための比較対象レコードを取得
+				target, err := d.getCompareTarget(pageCondition.Forward.After)
+				if err != nil {
+					return nil, err
+				}
+				targetValue := getTargetValueByOrderKey(*edgeOrder.Key.TodoOrderKey, target)
+				if targetValue == nil {
+					return nil, errors.New("no target value")
+				}
+				base = d.db.Where(base.Where(col.GreaterThan(targetValue)).Order(col_ASC(edgeOrder)).Limit(pageCondition.Forward.First).QueryExpr()).
+					Order(col_DESC(edgeOrder))
 			}
-
+			/*
+			 * 前ページに遷移する場合、5, 4, 3, 2, 1 を取得する条件にする必要がある。
+			 * pageCondition.Backward.Beforeが、今表示している一覧の"最終行"を示すカーソルなので、そこから「 6 」という数値が取得できる。
+			 * 結果、「num < 6」を５件取得する条件を追加すればいい。
+			 */
+			if pageCondition.Backward != nil {
+				// 「このレコードよりも前のレコードを取得」という条件に使うための比較対象レコードを取得
+				target, err := d.getCompareTarget(pageCondition.Backward.Before)
+				if err != nil {
+					return nil, err
+				}
+				targetValue := getTargetValueByOrderKey(*edgeOrder.Key.TodoOrderKey, target)
+				if targetValue == nil {
+					return nil, errors.New("no target value")
+				}
+				base = base.Where(col.GreaterThan(targetValue)).Order(col_DESC(edgeOrder)).Limit(pageCondition.Backward.Last)
+			}
 		}
 	}
 
@@ -260,4 +281,47 @@ func (d *todoDao) getCompareTarget(cursor *string) (*Todo, error) {
 		return nil, err
 	}
 	return target, nil
+}
+
+func getColumnNameByOrderKey(todoOrderKey models.TodoOrderKey) (*c, error) {
+	// todoテーブルのテーブル名
+	todo := TableName(&Todo{})
+	// userテーブルのテーブル名
+	user := TableName(&User{})
+
+	switch todoOrderKey {
+	case models.TodoOrderKeyText:
+		return Col(todo, "text"), nil
+	case models.TodoOrderKeyDone:
+		return Col(todo, "done"), nil
+	case models.TodoOrderKeyCreatedAt:
+		return Col(todo, "created_at"), nil
+	case models.TodoOrderKeyUserName:
+		return Col(user, "name"), nil
+	default:
+		return nil, errors.New("not target orderKey")
+	}
+}
+
+func getTargetValueByOrderKey(todoOrderKey models.TodoOrderKey, todo *Todo) interface{} {
+	switch todoOrderKey {
+	case models.TodoOrderKeyText:
+		return todo.Text
+	case models.TodoOrderKeyDone:
+		return todo.Done
+	case models.TodoOrderKeyCreatedAt:
+		return todo.CreatedAt
+	case models.TodoOrderKeyUserName:
+		return todo.Name
+	default:
+		return nil
+	}
+}
+
+func col_ASC(o *models.EdgeOrder) string {
+	return fmt.Sprintf("%s %s", o.Key.TodoOrderKey.Val(), models.OrderDirectionAsc.String())
+}
+
+func col_DESC(o *models.EdgeOrder) string {
+	return fmt.Sprintf("%s %s", o.Key.TodoOrderKey.Val(), models.OrderDirectionDesc.String())
 }

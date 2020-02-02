@@ -18,22 +18,22 @@ type c struct {
 	col string
 }
 
-func Col(table, col string) c {
-	return c{col: fmt.Sprintf("%s.%s", table, col)}
+func Col(table, col string) *c {
+	return &c{col: fmt.Sprintf("%s.%s", table, col)}
 }
 
-func (r c) Val() string {
+func (r *c) Val() string {
 	return r.col
 }
 
-func (r c) Like(matchStr string) string {
+func (r *c) Like(matchStr string) string {
 	return r.col + fmt.Sprintf(" LIKE '%s'", matchStr)
 }
 
-func (r c) Upper() string {
-	return r.col + " > "
+func (r *c) GreaterThan(target interface{}) string {
+	return fmt.Sprintf("%s > %v", r.col, target)
 }
 
-func (r c) Lower() string {
-	return r.col + " < "
+func (r *c) LessThan(target interface{}) string {
+	return fmt.Sprintf("%s < %v", r.col, target)
 }
