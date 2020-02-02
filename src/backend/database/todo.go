@@ -13,6 +13,23 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type TodoForInput struct {
+	ID        string    `gorm:"column:id;primary_key"`
+	Text      string    `gorm:"column:text"`
+	Done      bool      `gorm:"column:done"`
+	CreatedAt time.Time `gorm:"column:created_at"`
+	UserID    string    `gorm:column:user_id`
+}
+
+func (t *TodoForInput) TableName() string {
+	return "todo"
+}
+
+// Tableを実装するマーカーインタフェース
+func (t *TodoForInput) IsTable() bool {
+	return true
+}
+
 type Todo struct {
 	ID        string    `gorm:"column:id;primary_key"`
 	Text      string    `gorm:"column:text"`
@@ -36,7 +53,7 @@ func (t *Todo) IsTable() bool {
 }
 
 type TodoDao interface {
-	InsertOne(ctx context.Context, u *Todo) error
+	InsertOne(ctx context.Context, u *TodoForInput) error
 	FindAll(ctx context.Context) ([]*Todo, error)
 	FindByUserID(ctx context.Context, userID string) ([]*Todo, error)
 	FindOne(ctx context.Context, id string) (*Todo, error)
@@ -52,7 +69,7 @@ func NewTodoDao(db *gorm.DB) TodoDao {
 	return &todoDao{db: db}
 }
 
-func (d *todoDao) InsertOne(ctx context.Context, u *Todo) error {
+func (d *todoDao) InsertOne(ctx context.Context, u *TodoForInput) error {
 	res := d.db.Create(u)
 	if err := res.Error; err != nil {
 		return err

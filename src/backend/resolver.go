@@ -36,13 +36,11 @@ func (r *mutationResolver) Noop(ctx context.Context, input *NoopInput) (*NoopPay
 func (r *mutationResolver) CreateTodo(ctx context.Context, input NewTodo) (string, error) {
 	log.Printf("[mutationResolver.CreateTodo] input: %#v", input)
 	id := util.CreateUniqueID()
-	err := database.NewTodoDao(r.DB).InsertOne(ctx, &database.Todo{
-		ID:   id,
-		Text: input.Text,
-		Done: false,
-		User: database.User{
-			ID: input.UserID,
-		},
+	err := database.NewTodoDao(r.DB).InsertOne(ctx, &database.TodoForInput{
+		ID:     id,
+		Text:   input.Text,
+		Done:   false,
+		UserID: input.UserID,
 	})
 	if err != nil {
 		return "", err
