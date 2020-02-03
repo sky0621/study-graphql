@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/sky0621/study-graphql/src/backend/util"
@@ -172,17 +173,6 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.T
 	}
 
 	/*
-	 * 並べ替え条件が指定されていた場合
-	 */
-	if edgeOrder.ExistsOrder() {
-		orderKey := edgeOrder.Key.TodoOrderKey.Val()
-		if orderKey != "" {
-			// TODO: テーブル名のエイリアスを付けていないので同じカラムを持つテーブルを複数JOIN時に困る
-			base = base.Order(fmt.Sprintf("%s %s", orderKey, edgeOrder.Direction.String()))
-		}
-	}
-
-	/*
 	 * ページング条件が指定されていた場合
 	 * （※並べ替えのキー項目と昇順・降順の指定がないとページング不可のため、if文の判定に追加）
 	 */
@@ -227,6 +217,7 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.T
 			 * 結果、「num < 7」を５件取得する条件を追加すればいい。
 			 * ※ただし、並べ替え順を”昇順”のままにすると、小さいものから５件取得する条件である都合上、意図に反して 1, 2, 3, 4, 5 が取得される。
 			 *  そのため、いったん”降順”で並べ替えて取得した後、再度、”昇順”で並べ替え直す必要がある。
+			 *  （再度の並べ替え直しは検索結果取得後にロジックでソートかけることで実現する。）
 			 */
 			if pageCondition.Backward != nil {
 				// 「このレコードよりも前のレコードを取得」という条件に使うための比較対象レコードを取得
@@ -238,9 +229,7 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.T
 				if targetValue == nil {
 					return nil, errors.New("no target value")
 				}
-				subQuery := base.New()
-				base = base.Where(subQuery.Where(col.LessThan(targetValue)).Order(col_DESC(edgeOrder)).Limit(pageCondition.Backward.Last).SubQuery()).
-					Order(col_ASC(edgeOrder))
+				base = base.Where(col.LessThan(targetValue)).Order(col_DESC(edgeOrder)).Limit(pageCondition.Backward.Last)
 			}
 		/*
 		 *　★ 10, 9, 8, 7, 6 の降順で並んでいる場合
@@ -252,6 +241,7 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.T
 			 * 結果、「num > 10」を５件取得する条件を追加すればいい。
 			 * ※ただし、並べ替え順を”降順”のままにすると、大きいものから５件取得する条件である都合上、意図に反して 16, 15, 14, 13, 12 が取得される。
 			 *  そのため、いったん”昇順”で並べ替えて取得した後、再度、”降順”で並べ替え直す必要がある。
+			 *  （再度の並べ替え直しは検索結果取得後にロジックでソートかけることで実現する。）
 			 */
 			if pageCondition.Forward != nil {
 				// 「このレコードよりも後のレコードを取得」という条件に使うための比較対象レコードを取得
@@ -263,9 +253,9 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.T
 				if targetValue == nil {
 					return nil, errors.New("no target value")
 				}
-				base = d.db.Where(base.Where(col.GreaterThan(targetValue)).Order(col_ASC(edgeOrder)).Limit(pageCondition.Forward.First).QueryExpr()).
-					Order(col_DESC(edgeOrder))
+				base = base.Where(col.GreaterThan(targetValue)).Order(col_ASC(edgeOrder)).Limit(pageCondition.Forward.First)
 			}
+
 			/*
 			 * 前ページに遷移する場合、5, 4, 3, 2, 1 を取得する条件にする必要がある。
 			 * pageCondition.Backward.Beforeが、今表示している一覧の"最終行"を示すカーソルなので、そこから「 6 」という数値が取得できる。
@@ -290,7 +280,65 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.T
 	if err := base.Find(&results).Error; err != nil {
 		return nil, err
 	}
+
+	/*
+	 * 並べ替え条件が指定されていた場合
+	 * （ページング条件指定時に、指定した並べ替え順とは逆の順序で取得する必要が生じる都合上、いったん検索結果取得後にロジックで並べ替えることにする）
+	 */
+	if edgeOrder.ExistsOrder() {
+		reOrder(results, edgeOrder)
+	}
+
 	return results, nil
+}
+
+func reOrder(results []*Todo, edgeOrder *models.EdgeOrder) {
+	if results == nil {
+		return
+	}
+	if len(results) == 0 {
+		return
+	}
+	if edgeOrder.Key.TodoOrderKey == nil {
+		return
+	}
+	switch *edgeOrder.Key.TodoOrderKey {
+	case models.TodoOrderKeyText:
+		if edgeOrder.Direction == models.OrderDirectionAsc {
+			sort.Slice(results, func(i int, j int) bool {
+				return results[i].Text < results[j].Text
+			})
+		}
+		if edgeOrder.Direction == models.OrderDirectionDesc {
+			sort.Slice(results, func(i int, j int) bool {
+				return results[i].Text > results[j].Text
+			})
+		}
+	case models.TodoOrderKeyDone:
+		if edgeOrder.Direction == models.OrderDirectionAsc {
+			sort.Slice(results, func(i int, j int) bool {
+				return boolToInt(results[i].Done) < boolToInt(results[j].Done)
+			})
+		}
+		if edgeOrder.Direction == models.OrderDirectionDesc {
+			sort.Slice(results, func(i int, j int) bool {
+				return boolToInt(results[i].Done) > boolToInt(results[j].Done)
+			})
+		}
+	case models.TodoOrderKeyCreatedAt:
+		if edgeOrder.Direction == models.OrderDirectionAsc {
+			sort.Slice(results, func(i int, j int) bool {
+				return results[i].CreatedAt.UnixNano() < results[j].CreatedAt.UnixNano()
+			})
+		}
+		if edgeOrder.Direction == models.OrderDirectionDesc {
+			sort.Slice(results, func(i int, j int) bool {
+				return results[i].CreatedAt.UnixNano() > results[j].CreatedAt.UnixNano()
+			})
+		}
+	case models.TodoOrderKeyUserName:
+
+	}
 }
 
 func (d *todoDao) getCompareTarget(cursor *string) (*Todo, error) {

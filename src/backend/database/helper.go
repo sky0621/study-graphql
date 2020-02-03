@@ -39,3 +39,10 @@ func (r *c) LessThan(target interface{}) string {
 	// TODO: time or string が前提になってしまっている。
 	return fmt.Sprintf("%s < '%v'", r.col, target)
 }
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
