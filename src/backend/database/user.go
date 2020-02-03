@@ -1,6 +1,9 @@
 package database
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/jinzhu/gorm"
 )
 
@@ -9,15 +12,25 @@ type User struct {
 	Name string `gorm:"column:name"`
 }
 
+func (u *User) Columns() string {
+	tn := u.TableName()
+	return fmt.Sprintf("%s.id, %s.name", tn, tn)
+}
+
 func (u *User) TableName() string {
 	return "user"
 }
 
+// Tableを実装するマーカーインタフェース
+func (u *User) IsTable() bool {
+	return true
+}
+
 type UserDao interface {
-	InsertOne(u *User) error
-	FindAll() ([]*User, error)
-	FindOne(id string) (*User, error)
-	FindByTodoID(todoID string) (*User, error)
+	InsertOne(ctx context.Context, u *User) error
+	FindAll(ctx context.Context) ([]*User, error)
+	FindOne(ctx context.Context, id string) (*User, error)
+	FindByTodoID(ctx context.Context, todoID string) (*User, error)
 }
 
 type userDao struct {
@@ -28,7 +41,7 @@ func NewUserDao(db *gorm.DB) UserDao {
 	return &userDao{db: db}
 }
 
-func (d *userDao) InsertOne(u *User) error {
+func (d *userDao) InsertOne(ctx context.Context, u *User) error {
 	res := d.db.Create(u)
 	if err := res.Error; err != nil {
 		return err
@@ -36,7 +49,7 @@ func (d *userDao) InsertOne(u *User) error {
 	return nil
 }
 
-func (d *userDao) FindAll() ([]*User, error) {
+func (d *userDao) FindAll(ctx context.Context) ([]*User, error) {
 	var users []*User
 	res := d.db.Find(&users)
 	if err := res.Error; err != nil {
@@ -45,7 +58,7 @@ func (d *userDao) FindAll() ([]*User, error) {
 	return users, nil
 }
 
-func (d *userDao) FindOne(id string) (*User, error) {
+func (d *userDao) FindOne(ctx context.Context, id string) (*User, error) {
 	var users []*User
 	res := d.db.Where("id = ?", id).Find(&users)
 	if err := res.Error; err != nil {
@@ -57,7 +70,7 @@ func (d *userDao) FindOne(id string) (*User, error) {
 	return users[0], nil
 }
 
-func (d *userDao) FindByTodoID(todoID string) (*User, error) {
+func (d *userDao) FindByTodoID(ctx context.Context, todoID string) (*User, error) {
 	var users []*User
 	res := d.db.Table("user").
 		Select("user.*").

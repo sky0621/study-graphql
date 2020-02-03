@@ -2,6 +2,10 @@
 
 package backend
 
+type Node interface {
+	IsNode()
+}
+
 type NewTodo struct {
 	Text   string `json:"text"`
 	UserID string `json:"userId"`
@@ -9,4 +13,12 @@ type NewTodo struct {
 
 type NewUser struct {
 	Name string `json:"name"`
+}
+
+type NoopInput struct {
+	ClientMutationID *string `json:"clientMutationId"`
+}
+
+type NoopPayload struct {
+	ClientMutationID *string `json:"clientMutationId"`
 }

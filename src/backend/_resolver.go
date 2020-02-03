@@ -16,15 +16,15 @@ func (r *Resolver) Mutation() MutationResolver {
 func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
 }
-func (r *Resolver) Todo() TodoResolver {
-	return &todoResolver{r}
-}
 func (r *Resolver) User() UserResolver {
 	return &userResolver{r}
 }
 
 type mutationResolver struct{ *Resolver }
 
+func (r *mutationResolver) Noop(ctx context.Context, input *NoopInput) (*NoopPayload, error) {
+	panic("not implemented")
+}
 func (r *mutationResolver) CreateTodo(ctx context.Context, input NewTodo) (string, error) {
 	panic("not implemented")
 }
@@ -34,22 +34,22 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input NewUser) (strin
 
 type queryResolver struct{ *Resolver }
 
+func (r *queryResolver) Node(ctx context.Context, id string) (Node, error) {
+	panic("not implemented")
+}
 func (r *queryResolver) Todos(ctx context.Context) ([]*models.Todo, error) {
 	panic("not implemented")
 }
 func (r *queryResolver) Todo(ctx context.Context, id string) (*models.Todo, error) {
 	panic("not implemented")
 }
+func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *models.TextFilterCondition, pageCondition *models.PageCondition, edgeOrder *models.EdgeOrder) (*models.TodoConnection, error) {
+	panic("not implemented")
+}
 func (r *queryResolver) Users(ctx context.Context) ([]*models.User, error) {
 	panic("not implemented")
 }
 func (r *queryResolver) User(ctx context.Context, id string) (*models.User, error) {
-	panic("not implemented")
-}
-
-type todoResolver struct{ *Resolver }
-
-func (r *todoResolver) User(ctx context.Context, obj *models.Todo) (*models.User, error) {
 	panic("not implemented")
 }
 

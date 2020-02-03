@@ -1,39 +1,25 @@
-# GraphQL schema example
-#
-# https://gqlgen.com/getting-started/
-
-type Todo {
-  id: ID!
-  text: String!
-  done: Boolean!
-  createdAt: Int!
-  user: User!
+# Global Object Identification ... 全データを共通のIDでユニーク化
+interface Node {
+    id: ID!
 }
 
-type User {
-  id: ID!
-  name: String!
-  todos: [Todo!]!
+schema {
+    query: Query
+    mutation: Mutation
 }
 
 type Query {
-  todos: [Todo!]!
-  todo(id: ID!): Todo!
-
-  users: [User!]!
-  user(id: ID!): User!
-}
-
-input NewTodo {
-  text: String!
-  userId: String!
-}
-
-input NewUser {
-  name: String!
+    node(id: ID!): Node
 }
 
 type Mutation {
-  createTodo(input: NewTodo!): ID!
-  createUser(input: NewUser!): ID!
+    noop(input: NoopInput): NoopPayload
+}
+
+input NoopInput {
+    clientMutationId: String
+}
+
+type NoopPayload {
+    clientMutationId: String
 }
