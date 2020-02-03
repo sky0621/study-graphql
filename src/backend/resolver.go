@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/sky0621/study-graphql/src/backend/database"
@@ -119,6 +120,11 @@ func (r *queryResolver) TodoConnection(ctx context.Context,
 
 	// 検索結果全件数と１ページあたりの表示件数から、今回の検索による総ページ数を算出
 	totalPage := pageCondition.TotalPage(totalCount)
+
+	mtp := pageCondition.MoveToPageNo()
+	mtpi64 := int64(mtp)
+	hnp := totalPage - mtpi64
+	fmt.Println(hnp)
 
 	// ページ情報を計算・収集しておく
 	pageInfo := &models.PageInfo{

@@ -168,7 +168,16 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.T
 	 */
 	if pageCondition.IsInitialPageView() {
 		if pageCondition.HasInitialLimit() {
-			base = base.Limit(*pageCondition.InitialLimit)
+			if edgeOrder.ExistsOrder() {
+				switch edgeOrder.Direction {
+				case models.OrderDirectionAsc:
+					base = base.Order(col_ASC(edgeOrder)).Limit(*pageCondition.InitialLimit)
+				case models.OrderDirectionDesc:
+					base = base.Order(col_DESC(edgeOrder)).Limit(*pageCondition.InitialLimit)
+				}
+			} else {
+				base = base.Limit(*pageCondition.InitialLimit)
+			}
 		}
 	}
 
@@ -232,16 +241,13 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.T
 				base = base.Where(col.LessThan(targetValue)).Order(col_DESC(edgeOrder)).Limit(pageCondition.Backward.Last)
 			}
 		/*
-		 *　★ 10, 9, 8, 7, 6 の降順で並んでいる場合
+		 *　★ 11, 10, 9, 8, 7 の降順で並んでいる場合
 		 */
 		case models.OrderDirectionDesc:
 			/*
-			 * 次ページに遷移する場合、15, 14, 13, 12, 11 を取得する条件にする必要がある。
-			 * pageCondition.Forward.Afterが、今表示している一覧の"１行目"を示すカーソルなので、そこから「 10 」という数値が取得できる。
-			 * 結果、「num > 10」を５件取得する条件を追加すればいい。
-			 * ※ただし、並べ替え順を”降順”のままにすると、大きいものから５件取得する条件である都合上、意図に反して 16, 15, 14, 13, 12 が取得される。
-			 *  そのため、いったん”昇順”で並べ替えて取得した後、再度、”降順”で並べ替え直す必要がある。
-			 *  （再度の並べ替え直しは検索結果取得後にロジックでソートかけることで実現する。）
+			 * 次ページに遷移する場合、6, 5, 4, 3, 2 を取得する条件にする必要がある。
+			 * pageCondition.Forward.Afterが、今表示している一覧の"最終行"を示すカーソルなので、そこから「 7 」という数値が取得できる。
+			 * 結果、「num < 7」を５件取得する条件を追加すればいい。
 			 */
 			if pageCondition.Forward != nil {
 				// 「このレコードよりも後のレコードを取得」という条件に使うための比較対象レコードを取得
@@ -253,13 +259,16 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.T
 				if targetValue == nil {
 					return nil, errors.New("no target value")
 				}
-				base = base.Where(col.GreaterThan(targetValue)).Order(col_ASC(edgeOrder)).Limit(pageCondition.Forward.First)
+				base = base.Where(col.LessThan(targetValue)).Order(col_DESC(edgeOrder)).Limit(pageCondition.Forward.First)
 			}
 
 			/*
-			 * 前ページに遷移する場合、5, 4, 3, 2, 1 を取得する条件にする必要がある。
-			 * pageCondition.Backward.Beforeが、今表示している一覧の"最終行"を示すカーソルなので、そこから「 6 」という数値が取得できる。
-			 * 結果、「num < 6」を５件取得する条件を追加すればいい。
+			 * 前ページに遷移する場合、16, 15, 14, 13, 12 を取得する条件にする必要がある。
+			 * pageCondition.Backward.Beforeが、今表示している一覧の"1行目"を示すカーソルなので、そこから「 11 」という数値が取得できる。
+			 * 結果、「num > 11」を５件取得する条件を追加すればいい。
+			 * ※ただし、並べ替え順を”降順”のままにすると、大きいものから５件取得する条件である都合上、意図に反して 17, 16, 15, 14, 13 が取得される。
+			 *  そのため、いったん”昇順”で並べ替えて取得した後、再度、”降順”で並べ替え直す必要がある。
+			 *  （再度の並べ替え直しは検索結果取得後にロジックでソートかけることで実現する。）
 			 */
 			if pageCondition.Backward != nil {
 				// 「このレコードよりも前のレコードを取得」という条件に使うための比較対象レコードを取得
@@ -271,7 +280,7 @@ func (d *todoDao) FindByCondition(ctx context.Context, filterCondition *models.T
 				if targetValue == nil {
 					return nil, errors.New("no target value")
 				}
-				base = base.Where(col.GreaterThan(targetValue)).Order(col_DESC(edgeOrder)).Limit(pageCondition.Backward.Last)
+				base = base.Where(col.GreaterThan(targetValue)).Order(col_ASC(edgeOrder)).Limit(pageCondition.Backward.Last)
 			}
 		}
 	}

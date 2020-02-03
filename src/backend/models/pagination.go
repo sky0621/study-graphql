@@ -39,10 +39,22 @@ func (c *PageCondition) TotalPage(totalCount int64) int64 {
 	if c == nil {
 		return 0
 	}
-	if c.InitialLimit == nil {
-		return 0
+	targetCount := 0
+	if c.Backward == nil && c.Forward == nil {
+		if c.InitialLimit == nil {
+			return 0
+		} else {
+			targetCount = *c.InitialLimit
+		}
+	} else {
+		if c.Backward != nil {
+			targetCount = c.Backward.Last
+		}
+		if c.Forward != nil {
+			targetCount = c.Forward.First
+		}
 	}
-	return int64(math.Ceil(float64(totalCount) / float64(*c.InitialLimit)))
+	return int64(math.Ceil(float64(totalCount) / float64(targetCount)))
 }
 
 func (c *PageCondition) MoveToPageNo() int {
