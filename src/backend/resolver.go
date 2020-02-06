@@ -79,6 +79,10 @@ func (r *queryResolver) Todos(ctx context.Context) ([]*models.Todo, error) {
 			Text:      todo.Text,
 			Done:      todo.Done,
 			CreatedAt: todo.CreatedAt.Unix(),
+			User: &models.User{
+				ID:   todo.User.ID,
+				Name: todo.User.Name,
+			},
 		})
 	}
 	return results, nil
