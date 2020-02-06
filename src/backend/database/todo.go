@@ -346,7 +346,7 @@ func reOrder(results []*Todo, edgeOrder *models.EdgeOrder) {
 			})
 		}
 	case models.TodoOrderKeyUserName:
-
+		// FIXME: 後回し。
 	}
 }
 

@@ -1,0 +1,32 @@
+query todoConnection(
+  $filterWord: TextFilterCondition
+  $pageCondition: PageCondition
+  $edgeOrder: EdgeOrder
+) {
+  todoConnection(
+    filterWord: $filterWord
+    pageCondition: $pageCondition
+    edgeOrder: $edgeOrder
+  ) {
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      node {
+        id
+        text
+        done
+        createdAt
+        user {
+          id
+          name
+        }
+      }
+      cursor
+    }
+    totalCount
+  }
+}

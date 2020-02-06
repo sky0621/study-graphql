@@ -3,5 +3,4 @@ export interface DataTableHeader {
   value: string
   sortable: boolean
   width?: number
-  filter?: (value: any, search: string, item: any) => boolean
 }
