@@ -31,6 +31,18 @@ import { Component, Vue, Watch } from '~/node_modules/nuxt-property-decorator'
 // eslint-disable-next-line no-unused-vars
 import { DataTableHeader } from '~/types/vuetify'
 import todoConnection from '~/apollo/queries/todoConnection.gql'
+import {
+  // eslint-disable-next-line no-unused-vars
+  Edge,
+  // eslint-disable-next-line no-unused-vars
+  EdgeOrder,
+  // eslint-disable-next-line no-unused-vars
+  OrderDirection,
+  // eslint-disable-next-line no-unused-vars
+  PageCondition,
+  // eslint-disable-next-line no-unused-vars
+  TodoOrderKey
+} from '~/gql-types'
 
 // v-data-tableにおけるヘッダーの定義用
 class DataTableHeaderImpl implements DataTableHeader {
@@ -79,19 +91,61 @@ export default class TodoPaging extends Vue {
   // ページングに依らない検索条件に合致する総件数を保持
   private totalCount: number = 0
 
+  // 今回のページの１番目のレコードを表す識別子
+  private startCursor: string | null = null
+
+  // 今回のページの最後のレコードを表す識別子
+  private endCursor: string | null = null
+
+  // 現在のページを表す（これも、GraphQLサーバに渡すパラメータとして必要）
+  private nowPage: number = 1
+
+  // 文字列フィルタ欄の入力を監視
+  @Watch('search')
+  watchSearchWord() {
+    this.initPageParam()
+    this.connection()
+  }
+
   // v-data-tableの状態変更をウォッチし、その変更を契機にconnection関数をコール
   @Watch('options')
   watchOptions() {
+    // MEMO: ソートや１ページあたり表示件数の変更時は「1」が渡される。
+    if (this.options.page === 1) {
+      this.initPageParam()
+    }
     this.connection()
+  }
+
+  // 初期表示時やページング条件をクリアしたいタイミングでコールする関数
+  private initPageParam(): void {
+    this.nowPage = 1
+    this.options.page = 1
   }
 
   // Apolloライブラリを使ってGraphQLサーバにクエリ発行
   private async connection() {
     try {
       // $apollo.query()がPromiseを返すのでasync/awaitで受け取り
-      // まずは、ページング・並べ替え条件等を指定せず、単純にクエリを叩く
       const res = await this.$apollo.query({
-        query: todoConnection
+        query: todoConnection,
+        variables: {
+          // 文字列フィルタ条件
+          filterWord: { filterWord: this.search },
+          // ページング条件
+          pageCondition: this.createPageCondition(
+            this.nowPage, // 現在のページ
+            this.options.page, // 遷移先のページ
+            this.options.itemsPerPage, // １ページあたりの表示件数指定
+            this.startCursor,
+            this.endCursor
+          )
+          // 並び替え条件
+          // edgeOrder: this.createEdgeOrder(
+          //   this.options.sortBy,
+          //   this.options.sortDesc
+          // )
+        }
       })
 
       if (res && res.data && res.data.todoConnection) {
@@ -99,10 +153,19 @@ export default class TodoPaging extends Vue {
 
         // 一覧表示するデータを抜き出す
         // edges [ node {id, text, done, ...} ]
-        this.items = conn.edges.filter((e) => e.node).map((e) => e.node)
+        this.items = conn.edges
+          .filter((e: Edge) => e.node)
+          .map((e: Edge) => e.node)
 
         // ページングに依らない検索条件に合致する総件数を保持
         this.totalCount = conn.totalCount
+
+        // v-data-tableのoptions変更に影響する各種ページ情報を保持
+        const pageInfo = conn.pageInfo
+        this.startCursor = pageInfo.startCursor
+        this.endCursor = pageInfo.endCursor
+
+        this.nowPage = this.options.page
       } else {
         console.log('no result')
       }
@@ -110,5 +173,41 @@ export default class TodoPaging extends Vue {
       console.log(e)
     }
   }
+
+  private createPageCondition(
+    nowPage: number,
+    nextPage: number,
+    limit: number,
+    startCursor: string | null,
+    endCursor: string | null
+  ): PageCondition {
+    return {
+      forward: nowPage < nextPage ? { first: limit, after: endCursor } : null,
+      backward:
+        nowPage > nextPage ? { last: limit, before: startCursor } : null,
+      nowPageNo: nowPage,
+      initialLimit: limit > 0 ? limit : null
+    }
+  }
+
+  // private createEdgeOrder(
+  //   sortBy: Array<string>,
+  //   sortDesc: Array<boolean>
+  // ): EdgeOrder | null {
+  //   // MEMO: 現状では一度に指定できるソートキーは１つ
+  //   if (sortBy.length !== 1 || sortDesc.length !== 1) {
+  //     return null
+  //   }
+  //   const direction = sortDesc[0] ? OrderDirection.Desc : OrderDirection.Asc
+  //   switch (sortBy[0]) {
+  //     case 'text':
+  //       return { key: { todoOrderKey: TodoOrderKey.Text }, direction }
+  //     case 'done':
+  //       return { key: { todoOrderKey: TodoOrderKey.Done }, direction }
+  //     case 'createdAt':
+  //       return { key: { todoOrderKey: TodoOrderKey.CreatedAt }, direction }
+  //   }
+  //   return null
+  // }
 }
 </script>
