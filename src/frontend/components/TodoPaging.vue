@@ -12,7 +12,12 @@
     <v-row>
       <v-col col="9">
         <v-card>
-          <v-data-table :search="search" :headers="headers" fixed-header>
+          <v-data-table
+            :search="search"
+            :headers="headers"
+            :options.sync="options"
+            fixed-header
+          >
           </v-data-table>
         </v-card>
       </v-col>
@@ -20,9 +25,10 @@
   </v-form>
 </template>
 <script lang="ts">
-import { Component, Vue } from '@/node_modules/nuxt-property-decorator'
+import { Component, Vue, Watch } from '~/node_modules/nuxt-property-decorator'
 // eslint-disable-next-line no-unused-vars
-import { DataTableHeader } from '@/types/vuetify'
+import { DataTableHeader } from '~/types/vuetify'
+import todoConnection from '~/apollo/queries/todoConnection.gql'
 
 @Component({})
 export default class TodoPaging extends Vue {
@@ -42,8 +48,31 @@ export default class TodoPaging extends Vue {
     // eslint-disable-next-line no-use-before-define
     new DataTableHeaderImpl('User', 'user.name', false, 50)
   ]
+
+  // private items: Array<String> = ['A', 'b', 'C', 'D', 'E']
+
+  // eslint-disable-next-line no-use-before-define
+  private options = new DataTableOptions()
+
+  @Watch('options')
+  watchOptions() {
+    this.connection()
+  }
+
+  private async connection() {
+    try {
+      const res = await this.$apollo.query({
+        query: todoConnection
+      })
+      console.log(res)
+    } catch (e) {
+      // this.$toasted.error(e)
+      console.log(e)
+    }
+  }
 }
 
+// v-data-tableにおけるヘッダーの定義用
 class DataTableHeaderImpl implements DataTableHeader {
   text: string
   value: string
@@ -55,5 +84,21 @@ class DataTableHeaderImpl implements DataTableHeader {
     this.sortable = sortable
     this.width = width
   }
+}
+
+// v-data-tableにおけるページング・ソート条件値の受け取り用
+class DataTableOptions {
+  public page: number = 1
+  public itemsPerPage: number = 10
+  // MEMO: 現状では一度に指定できるソートキーは１つ
+  public sortBy: Array<string> = []
+  public sortDesc: Array<boolean> = []
+  // MEMO: 以下は、v-data-table の options 要素としては備わっているが現時点では未使用
+  // public multiSort: Boolean = false
+  // public mustSort: Boolean = false
+  // public groupBy: Array<String> = []
+  // public groupDesc: Array<Boolean> = []
+  // eslint-disable-next-line no-useless-constructor
+  constructor() {}
 }
 </script>

@@ -43,7 +43,7 @@ export default {
   /*
    ** Nuxt.js modules
    */
-  modules: ['@nuxtjs/apollo'],
+  modules: ['@nuxtjs/apollo', '@nuxtjs/toast', '@nuxtjs/proxy'],
   /*
    ** vuetify module configuration
    ** https://github.com/nuxt-community/vuetify-module
@@ -75,6 +75,27 @@ export default {
     },
     // 任意だけど、これがないとGraphQL的なエラー起きた時に原因が掴みづらいため
     errorHandler: '~/plugins/apollo-error-handler.js'
+  },
+
+  toast: {
+    position: 'top-center',
+    duration: 5000,
+    register: [
+      // Register custom toasts
+      {
+        name: 'my-error',
+        message: 'Oops...Something went wrong',
+        options: {
+          type: 'error'
+        }
+      }
+    ]
+  },
+
+  proxy: {
+    '/query': {
+      target: 'http://localhost:5050'
+    }
   },
 
   /*
