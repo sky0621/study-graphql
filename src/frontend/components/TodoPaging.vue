@@ -1,5 +1,6 @@
 <template>
   <v-form>
+    <!-- 「文字列フィルタ」テキストボックス表示エリア -->
     <v-row>
       <v-col col="5">
         <v-card class="pa-4">
@@ -7,6 +8,7 @@
         </v-card>
       </v-col>
     </v-row>
+    <!-- ページング込みの一覧テーブル表示エリア -->
     <v-row>
       <v-col col="9">
         <v-card>
@@ -24,10 +26,10 @@ import { DataTableHeader } from '@/types/vuetify'
 
 @Component({})
 export default class TodoPaging extends Vue {
-  // 文字列フィルタ用
+  // 文字列フィルタ入力値の受け口
   private readonly search = ''
 
-  // ヘッダー表示要素の配列
+  // 一覧テーブルのヘッダー表示要素の配列
   private readonly headers: DataTableHeader[] = [
     // eslint-disable-next-line no-use-before-define
     new DataTableHeaderImpl('ID', 'id', false, 50),
