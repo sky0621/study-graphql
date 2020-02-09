@@ -31,18 +31,8 @@ import { Component, Vue, Watch } from '~/node_modules/nuxt-property-decorator'
 // eslint-disable-next-line no-unused-vars
 import { DataTableHeader } from '~/types/vuetify'
 import todoConnection from '~/apollo/queries/todoConnection.gql'
-import {
-  // eslint-disable-next-line no-unused-vars
-  Edge,
-  // eslint-disable-next-line no-unused-vars
-  EdgeOrder,
-  // eslint-disable-next-line no-unused-vars
-  OrderDirection,
-  // eslint-disable-next-line no-unused-vars
-  PageCondition,
-  // eslint-disable-next-line no-unused-vars
-  TodoOrderKey
-} from '~/gql-types'
+// eslint-disable-next-line no-unused-vars
+import { Edge, EdgeOrder, PageCondition } from '~/gql-types'
 
 // v-data-tableにおけるヘッダーの定義用
 class DataTableHeaderImpl implements DataTableHeader {
@@ -139,12 +129,12 @@ export default class TodoPaging extends Vue {
             this.options.itemsPerPage, // １ページあたりの表示件数指定
             this.startCursor,
             this.endCursor
-          )
+          ),
           // 並び替え条件
-          // edgeOrder: this.createEdgeOrder(
-          //   this.options.sortBy,
-          //   this.options.sortDesc
-          // )
+          edgeOrder: this.createEdgeOrder(
+            this.options.sortBy,
+            this.options.sortDesc
+          )
         }
       })
 
@@ -181,6 +171,7 @@ export default class TodoPaging extends Vue {
     startCursor: string | null,
     endCursor: string | null
   ): PageCondition {
+    // 現在のページと遷移指示先のページとの比較によって「次へ(forward)」なのか「前へ(backward)」なのか判別
     return {
       forward: nowPage < nextPage ? { first: limit, after: endCursor } : null,
       backward:
@@ -190,24 +181,27 @@ export default class TodoPaging extends Vue {
     }
   }
 
-  // private createEdgeOrder(
-  //   sortBy: Array<string>,
-  //   sortDesc: Array<boolean>
-  // ): EdgeOrder | null {
-  //   // MEMO: 現状では一度に指定できるソートキーは１つ
-  //   if (sortBy.length !== 1 || sortDesc.length !== 1) {
-  //     return null
-  //   }
-  //   const direction = sortDesc[0] ? OrderDirection.Desc : OrderDirection.Asc
-  //   switch (sortBy[0]) {
-  //     case 'text':
-  //       return { key: { todoOrderKey: TodoOrderKey.Text }, direction }
-  //     case 'done':
-  //       return { key: { todoOrderKey: TodoOrderKey.Done }, direction }
-  //     case 'createdAt':
-  //       return { key: { todoOrderKey: TodoOrderKey.CreatedAt }, direction }
-  //   }
-  //   return null
-  // }
+  private createEdgeOrder(
+    sortBy: Array<string>,
+    sortDesc: Array<boolean>
+  ): EdgeOrder | null {
+    if (sortBy && sortDesc) {
+      // MEMO: 現状では一度に指定できるソートキーは１つ
+      if (sortBy.length !== 1 || sortDesc.length !== 1) {
+        return null
+      }
+      // TODO: enum値を指定するとビルドが通らなくなるので、やむなく文字列で指定
+      const direction = sortDesc[0] ? 'DESC' : 'ASC'
+      switch (sortBy[0]) {
+        case 'text':
+          return { key: { todoOrderKey: 'TEXT' }, direction }
+        case 'done':
+          return { key: { todoOrderKey: 'DONE' }, direction }
+        case 'createdAt':
+          return { key: { todoOrderKey: 'CREATED_AT' }, direction }
+      }
+    }
+    return null
+  }
 }
 </script>
