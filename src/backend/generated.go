@@ -66,7 +66,6 @@ type ComplexityRoot struct {
 		Node           func(childComplexity int, id string) int
 		Todo           func(childComplexity int, id string) int
 		TodoConnection func(childComplexity int, filterWord *models.TextFilterCondition, pageCondition *models.PageCondition, edgeOrder *models.EdgeOrder) int
-		Todos          func(childComplexity int) int
 		User           func(childComplexity int, id string) int
 		Users          func(childComplexity int) int
 	}
@@ -104,7 +103,6 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	Node(ctx context.Context, id string) (Node, error)
-	Todos(ctx context.Context) ([]*models.Todo, error)
 	Todo(ctx context.Context, id string) (*models.Todo, error)
 	TodoConnection(ctx context.Context, filterWord *models.TextFilterCondition, pageCondition *models.PageCondition, edgeOrder *models.EdgeOrder) (*models.TodoConnection, error)
 	Users(ctx context.Context) ([]*models.User, error)
@@ -235,13 +233,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.TodoConnection(childComplexity, args["filterWord"].(*models.TextFilterCondition), args["pageCondition"].(*models.PageCondition), args["edgeOrder"].(*models.EdgeOrder)), true
-
-	case "Query.todos":
-		if e.complexity.Query.Todos == nil {
-			break
-		}
-
-		return e.complexity.Query.Todos(childComplexity), true
 
 	case "Query.user":
 		if e.complexity.Query.User == nil {
@@ -548,7 +539,6 @@ enum MatchingPattern {
 	&ast.Source{Name: "../schema/todo.graphql", Input: `# Todo
 
 extend type Query {
-  todos: [Todo!]!
   todo(id: ID!): Todo!
 
   "Relay準拠ページング対応検索によるTODO一覧取得"
@@ -1153,43 +1143,6 @@ func (ec *executionContext) _Query_node(ctx context.Context, field graphql.Colle
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalONode2githubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋsrcᚋbackendᚐNode(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-		ec.Tracer.EndFieldExecution(ctx)
-	}()
-	rctx := &graphql.ResolverContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
-	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Todos(rctx)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*models.Todo)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNTodo2ᚕᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋsrcᚋbackendᚋmodelsᚐTodo(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_todo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3449,20 +3402,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_node(ctx, field)
-				return res
-			})
-		case "todos":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_todos(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			})
 		case "todo":

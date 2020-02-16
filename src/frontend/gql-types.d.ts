@@ -153,7 +153,6 @@ export type PageInfo = {
 export type Query = {
    __typename?: 'Query',
   node?: Maybe<Node>,
-  todos: Array<Todo>,
   todo: Todo,
   /** Relay準拠ページング対応検索によるTODO一覧取得 */
   todoConnection?: Maybe<TodoConnection>,

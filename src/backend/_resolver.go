@@ -37,9 +37,6 @@ type queryResolver struct{ *Resolver }
 func (r *queryResolver) Node(ctx context.Context, id string) (Node, error) {
 	panic("not implemented")
 }
-func (r *queryResolver) Todos(ctx context.Context) ([]*models.Todo, error) {
-	panic("not implemented")
-}
 func (r *queryResolver) Todo(ctx context.Context, id string) (*models.Todo, error) {
 	panic("not implemented")
 }

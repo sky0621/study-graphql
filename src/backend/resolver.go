@@ -66,27 +66,6 @@ type queryResolver struct{ *Resolver }
 func (r *queryResolver) Node(ctx context.Context, id string) (Node, error) {
 	panic("not implemented")
 }
-func (r *queryResolver) Todos(ctx context.Context) ([]*models.Todo, error) {
-	log.Println("[queryResolver.Todos]")
-	todos, err := database.NewTodoDao(r.DB).FindAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var results []*models.Todo
-	for _, todo := range todos {
-		results = append(results, &models.Todo{
-			ID:        todo.ID,
-			Text:      todo.Text,
-			Done:      todo.Done,
-			CreatedAt: todo.CreatedAt.Unix(),
-			User: &models.User{
-				ID:   todo.User.ID,
-				Name: todo.User.Name,
-			},
-		})
-	}
-	return results, nil
-}
 func (r *queryResolver) Todo(ctx context.Context, id string) (*models.Todo, error) {
 	log.Printf("[queryResolver.Todo] id: %s", id)
 	todo, err := database.NewTodoDao(r.DB).FindOne(ctx, id)
