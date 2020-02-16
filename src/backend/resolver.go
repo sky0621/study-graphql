@@ -16,7 +16,8 @@ import (
 // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
 
 type Resolver struct {
-	DB *gorm.DB
+	DB        *gorm.DB
+	GCPClient *GCPClientWrapper
 }
 
 func (r *Resolver) Mutation() MutationResolver {
@@ -47,6 +48,14 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input NewTodo) (strin
 		return "", err
 	}
 	return id, nil
+}
+func (r *mutationResolver) CreateCsv(ctx context.Context, condition *CreateCsvCondition) (string, error) {
+	task, err := r.GCPClient.CreateCloudTasksTask(ctx, CloudTasksQueueKindTodo, `{"message": "from Cloud Tasks#CreateCsv"`)
+	if err != nil {
+		return "", err
+	}
+
+	return task.GetName(), nil
 }
 func (r *mutationResolver) CreateUser(ctx context.Context, input NewUser) (string, error) {
 	log.Printf("[mutationResolver.CreateUser] input: %#v", input)

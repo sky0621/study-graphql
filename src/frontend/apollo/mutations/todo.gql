@@ -1,0 +1,3 @@
+mutation createCsv($condition: CreateCsvCondition) {
+  createCsv(condition: $condition)
+}

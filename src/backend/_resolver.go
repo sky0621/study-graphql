@@ -28,6 +28,9 @@ func (r *mutationResolver) Noop(ctx context.Context, input *NoopInput) (*NoopPay
 func (r *mutationResolver) CreateTodo(ctx context.Context, input NewTodo) (string, error) {
 	panic("not implemented")
 }
+func (r *mutationResolver) CreateCsv(ctx context.Context, condition *CreateCsvCondition) (string, error) {
+	panic("not implemented")
+}
 func (r *mutationResolver) CreateUser(ctx context.Context, input NewUser) (string, error) {
 	panic("not implemented")
 }

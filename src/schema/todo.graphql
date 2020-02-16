@@ -16,6 +16,7 @@ extend type Query {
 
 extend type Mutation {
   createTodo(input: NewTodo!): ID!
+  createCsv(condition: CreateCsvCondition): ID!
 }
 
 type Todo implements Node {
@@ -61,5 +62,9 @@ type TodoEdge implements Edge {
 
 input NewTodo {
   text: String!
+  userId: String!
+}
+
+input CreateCsvCondition {
   userId: String!
 }

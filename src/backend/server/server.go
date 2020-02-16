@@ -19,6 +19,9 @@ const defaultDataSource = "localuser:localpass@tcp(localhost:3306)/localdb?chars
 const defaultPort = "5050"
 
 func main() {
+	/*
+	 * RDB（Cloud SQL）
+	 */
 	dataSource := os.Getenv("CLOUDSQL_DATASOURCE")
 	if dataSource == "" {
 		dataSource = defaultDataSource
@@ -44,6 +47,31 @@ func main() {
 	}()
 	db.LogMode(true)
 
+	/*
+	 * タスクキュー（Cloud Tasks）
+	 */
+	projectID := os.Getenv("GCP_PROJECT_ID")
+	if projectID == "" {
+		os.Exit(-1)
+	}
+	locationID := os.Getenv("GCP_LOCATION_ID")
+	if locationID == "" {
+		os.Exit(-1)
+	}
+	credentialPath := os.Getenv("GCP_CREDENTIAL_PATH")
+	if credentialPath == "" {
+		os.Exit(-1)
+	}
+	queueIDMap := map[backend.CloudTasksQueueKind]string{
+		backend.CloudTasksQueueKindTodo: "my-queue",
+	}
+	taskExecURL := os.Getenv("GCP_CLOUDTASK_EXEC_URL")
+	if taskExecURL == "" {
+		os.Exit(-1)
+	}
+
+	gcpClient := backend.NewGCPClientWrapper(projectID, locationID, credentialPath, taskExecURL, queueIDMap)
+
 	r := chi.NewRouter()
 
 	cors := cors.New(cors.Options{
@@ -58,7 +86,7 @@ func main() {
 	r.Use(cors.Handler)
 
 	r.Handle("/", playgroundHandler())
-	r.Handle("/query", graphqlHandler(db))
+	r.Handle("/query", graphqlHandler(db, gcpClient))
 
 	if err := http.ListenAndServe(":"+port, r); err != nil {
 		panic(err)
@@ -72,8 +100,11 @@ func playgroundHandler() http.HandlerFunc {
 	}
 }
 
-func graphqlHandler(db *gorm.DB) http.HandlerFunc {
-	h := handler.GraphQL(backend.NewExecutableSchema(backend.Config{Resolvers: &backend.Resolver{DB: db}}))
+func graphqlHandler(db *gorm.DB, gcpClient *backend.GCPClientWrapper) http.HandlerFunc {
+	h := handler.GraphQL(backend.NewExecutableSchema(backend.Config{Resolvers: &backend.Resolver{
+		DB:        db,
+		GCPClient: gcpClient,
+	}}))
 	return func(w http.ResponseWriter, r *http.Request) {
 		h.ServeHTTP(w, r)
 	}

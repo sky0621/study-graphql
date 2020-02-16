@@ -6,6 +6,10 @@ type Node interface {
 	IsNode()
 }
 
+type CreateCsvCondition struct {
+	UserID string `json:"userId"`
+}
+
 type NewTodo struct {
 	Text   string `json:"text"`
 	UserID string `json:"userId"`

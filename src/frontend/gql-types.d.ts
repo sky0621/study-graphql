@@ -28,6 +28,10 @@ export type Connection = {
   totalCount: Scalars['Int'],
 };
 
+export type CreateCsvCondition = {
+  userId: Scalars['String'],
+};
+
 
 /** 検索結果一覧（※カーソル情報を含む） */
 export type Edge = {
@@ -64,6 +68,7 @@ export type Mutation = {
    __typename?: 'Mutation',
   noop?: Maybe<NoopPayload>,
   createTodo: Scalars['ID'],
+  createCsv: Scalars['ID'],
   createUser: Scalars['ID'],
 };
 
@@ -75,6 +80,11 @@ export type MutationNoopArgs = {
 
 export type MutationCreateTodoArgs = {
   input: NewTodo
+};
+
+
+export type MutationCreateCsvArgs = {
+  condition?: Maybe<CreateCsvCondition>
 };
 
 

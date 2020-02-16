@@ -8,6 +8,12 @@
         </v-card>
       </v-col>
     </v-row>
+    <!-- 各種ボタン表示エリア -->
+    <v-row>
+      <v-col col="9">
+        <v-btn @click="createCsv">CSVダウンロード</v-btn>
+      </v-col>
+    </v-row>
     <!-- ページング込みの一覧テーブル表示エリア -->
     <v-row>
       <v-col col="9">
@@ -31,6 +37,7 @@ import { Component, Vue, Watch } from '~/node_modules/nuxt-property-decorator'
 // eslint-disable-next-line no-unused-vars
 import { DataTableHeader } from '~/types/vuetify'
 import todoConnection from '~/apollo/queries/todoConnection.gql'
+import createCsv from '~/apollo/mutations/todo.gql'
 // eslint-disable-next-line no-unused-vars
 import { Edge, EdgeOrder, PageCondition } from '~/gql-types'
 
@@ -111,6 +118,17 @@ export default class TodoPaging extends Vue {
   private initPageParam(): void {
     this.nowPage = 1
     this.options.page = 1
+  }
+
+  private async createCsv() {
+    try {
+      const res = await this.$apollo.mutate({
+        mutation: createCsv
+      })
+      console.log(res)
+    } catch (e) {
+      console.log(e)
+    }
   }
 
   // Apolloライブラリを使ってGraphQLサーバにクエリ発行

@@ -46,6 +46,7 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Mutation struct {
+		CreateCsv  func(childComplexity int, condition *CreateCsvCondition) int
 		CreateTodo func(childComplexity int, input NewTodo) int
 		CreateUser func(childComplexity int, input NewUser) int
 		Noop       func(childComplexity int, input *NoopInput) int
@@ -99,6 +100,7 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	Noop(ctx context.Context, input *NoopInput) (*NoopPayload, error)
 	CreateTodo(ctx context.Context, input NewTodo) (string, error)
+	CreateCsv(ctx context.Context, condition *CreateCsvCondition) (string, error)
 	CreateUser(ctx context.Context, input NewUser) (string, error)
 }
 type QueryResolver interface {
@@ -126,6 +128,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Mutation.createCsv":
+		if e.complexity.Mutation.CreateCsv == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createCsv_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateCsv(childComplexity, args["condition"].(*CreateCsvCondition)), true
 
 	case "Mutation.createTodo":
 		if e.complexity.Mutation.CreateTodo == nil {
@@ -554,6 +568,7 @@ extend type Query {
 
 extend type Mutation {
   createTodo(input: NewTodo!): ID!
+  createCsv(condition: CreateCsvCondition): ID!
 }
 
 type Todo implements Node {
@@ -601,6 +616,10 @@ input NewTodo {
   text: String!
   userId: String!
 }
+
+input CreateCsvCondition {
+  userId: String!
+}
 `},
 	&ast.Source{Name: "../schema/user.graphql", Input: `# User
 
@@ -628,6 +647,20 @@ input NewUser {
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_createCsv_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *CreateCsvCondition
+	if tmp, ok := rawArgs["condition"]; ok {
+		arg0, err = ec.unmarshalOCreateCsvCondition2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋsrcᚋbackendᚐCreateCsvCondition(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["condition"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_createTodo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -861,6 +894,50 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().CreateTodo(rctx, args["input"].(NewTodo))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createCsv(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createCsv_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateCsv(rctx, args["condition"].(*CreateCsvCondition))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3039,6 +3116,24 @@ func (ec *executionContext) unmarshalInputBackwardPagination(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateCsvCondition(ctx context.Context, obj interface{}) (CreateCsvCondition, error) {
+	var it CreateCsvCondition
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "userId":
+			var err error
+			it.UserID, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputEdgeOrder(ctx context.Context, obj interface{}) (models.EdgeOrder, error) {
 	var it models.EdgeOrder
 	var asMap = obj.(map[string]interface{})
@@ -3293,6 +3388,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec._Mutation_noop(ctx, field)
 		case "createTodo":
 			out.Values[i] = ec._Mutation_createTodo(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createCsv":
+			out.Values[i] = ec._Mutation_createCsv(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -4415,6 +4515,18 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
+}
+
+func (ec *executionContext) unmarshalOCreateCsvCondition2githubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋsrcᚋbackendᚐCreateCsvCondition(ctx context.Context, v interface{}) (CreateCsvCondition, error) {
+	return ec.unmarshalInputCreateCsvCondition(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOCreateCsvCondition2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋsrcᚋbackendᚐCreateCsvCondition(ctx context.Context, v interface{}) (*CreateCsvCondition, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOCreateCsvCondition2githubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋsrcᚋbackendᚐCreateCsvCondition(ctx, v)
+	return &res, err
 }
 
 func (ec *executionContext) unmarshalOCursor2string(ctx context.Context, v interface{}) (string, error) {
