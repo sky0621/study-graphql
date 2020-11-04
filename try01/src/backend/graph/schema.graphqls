@@ -1,0 +1,16 @@
+type Language {
+  id: ID!
+  name: String!
+}
+
+type Engineer {
+  id: ID!
+  name: String!
+  age: Int!
+  usable: [Language!]!
+}
+
+type Query {
+  languages: [Language!]!
+  engineers: [Engineer!]!
+}
