@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -36,33 +37,57 @@ type Config struct {
 
 type ResolverRoot interface {
 	Query() QueryResolver
+	Todo() TodoResolver
 }
 
 type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
-	Engineer struct {
-		Age    func(childComplexity int) int
-		ID     func(childComplexity int) int
-		Name   func(childComplexity int) int
-		Usable func(childComplexity int) int
-	}
-
-	Language struct {
-		ID   func(childComplexity int) int
-		Name func(childComplexity int) int
+	PageInfo struct {
+		EndCursor       func(childComplexity int) int
+		HasNextPage     func(childComplexity int) int
+		HasPreviousPage func(childComplexity int) int
+		StartCursor     func(childComplexity int) int
 	}
 
 	Query struct {
-		Engineers func(childComplexity int) int
-		Languages func(childComplexity int) int
+		Node           func(childComplexity int, id string) int
+		TodoConnection func(childComplexity int, filterWord *model.TextFilterCondition, pageCondition *model.PageCondition, edgeOrder *model.EdgeOrder) int
+	}
+
+	Todo struct {
+		CreatedAt func(childComplexity int) int
+		Done      func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Text      func(childComplexity int) int
+		User      func(childComplexity int) int
+	}
+
+	TodoConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	TodoEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	User struct {
+		ID    func(childComplexity int) int
+		Name  func(childComplexity int) int
+		Todos func(childComplexity int) int
 	}
 }
 
 type QueryResolver interface {
-	Languages(ctx context.Context) ([]*model.Language, error)
-	Engineers(ctx context.Context) ([]*model.Engineer, error)
+	Node(ctx context.Context, id string) (model.Node, error)
+	TodoConnection(ctx context.Context, filterWord *model.TextFilterCondition, pageCondition *model.PageCondition, edgeOrder *model.EdgeOrder) (*model.TodoConnection, error)
+}
+type TodoResolver interface {
+	User(ctx context.Context, obj *model.Todo) (*model.User, error)
 }
 
 type executableSchema struct {
@@ -80,61 +105,148 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "Engineer.age":
-		if e.complexity.Engineer.Age == nil {
+	case "PageInfo.endCursor":
+		if e.complexity.PageInfo.EndCursor == nil {
 			break
 		}
 
-		return e.complexity.Engineer.Age(childComplexity), true
+		return e.complexity.PageInfo.EndCursor(childComplexity), true
 
-	case "Engineer.id":
-		if e.complexity.Engineer.ID == nil {
+	case "PageInfo.hasNextPage":
+		if e.complexity.PageInfo.HasNextPage == nil {
 			break
 		}
 
-		return e.complexity.Engineer.ID(childComplexity), true
+		return e.complexity.PageInfo.HasNextPage(childComplexity), true
 
-	case "Engineer.name":
-		if e.complexity.Engineer.Name == nil {
+	case "PageInfo.hasPreviousPage":
+		if e.complexity.PageInfo.HasPreviousPage == nil {
 			break
 		}
 
-		return e.complexity.Engineer.Name(childComplexity), true
+		return e.complexity.PageInfo.HasPreviousPage(childComplexity), true
 
-	case "Engineer.usable":
-		if e.complexity.Engineer.Usable == nil {
+	case "PageInfo.startCursor":
+		if e.complexity.PageInfo.StartCursor == nil {
 			break
 		}
 
-		return e.complexity.Engineer.Usable(childComplexity), true
+		return e.complexity.PageInfo.StartCursor(childComplexity), true
 
-	case "Language.id":
-		if e.complexity.Language.ID == nil {
+	case "Query.node":
+		if e.complexity.Query.Node == nil {
 			break
 		}
 
-		return e.complexity.Language.ID(childComplexity), true
+		args, err := ec.field_Query_node_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
 
-	case "Language.name":
-		if e.complexity.Language.Name == nil {
+		return e.complexity.Query.Node(childComplexity, args["id"].(string)), true
+
+	case "Query.todoConnection":
+		if e.complexity.Query.TodoConnection == nil {
 			break
 		}
 
-		return e.complexity.Language.Name(childComplexity), true
+		args, err := ec.field_Query_todoConnection_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
 
-	case "Query.engineers":
-		if e.complexity.Query.Engineers == nil {
+		return e.complexity.Query.TodoConnection(childComplexity, args["filterWord"].(*model.TextFilterCondition), args["pageCondition"].(*model.PageCondition), args["edgeOrder"].(*model.EdgeOrder)), true
+
+	case "Todo.createdAt":
+		if e.complexity.Todo.CreatedAt == nil {
 			break
 		}
 
-		return e.complexity.Query.Engineers(childComplexity), true
+		return e.complexity.Todo.CreatedAt(childComplexity), true
 
-	case "Query.languages":
-		if e.complexity.Query.Languages == nil {
+	case "Todo.done":
+		if e.complexity.Todo.Done == nil {
 			break
 		}
 
-		return e.complexity.Query.Languages(childComplexity), true
+		return e.complexity.Todo.Done(childComplexity), true
+
+	case "Todo.id":
+		if e.complexity.Todo.ID == nil {
+			break
+		}
+
+		return e.complexity.Todo.ID(childComplexity), true
+
+	case "Todo.text":
+		if e.complexity.Todo.Text == nil {
+			break
+		}
+
+		return e.complexity.Todo.Text(childComplexity), true
+
+	case "Todo.user":
+		if e.complexity.Todo.User == nil {
+			break
+		}
+
+		return e.complexity.Todo.User(childComplexity), true
+
+	case "TodoConnection.edges":
+		if e.complexity.TodoConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.TodoConnection.Edges(childComplexity), true
+
+	case "TodoConnection.pageInfo":
+		if e.complexity.TodoConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.TodoConnection.PageInfo(childComplexity), true
+
+	case "TodoConnection.totalCount":
+		if e.complexity.TodoConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.TodoConnection.TotalCount(childComplexity), true
+
+	case "TodoEdge.cursor":
+		if e.complexity.TodoEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.TodoEdge.Cursor(childComplexity), true
+
+	case "TodoEdge.node":
+		if e.complexity.TodoEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.TodoEdge.Node(childComplexity), true
+
+	case "User.id":
+		if e.complexity.User.ID == nil {
+			break
+		}
+
+		return e.complexity.User.ID(childComplexity), true
+
+	case "User.name":
+		if e.complexity.User.Name == nil {
+			break
+		}
+
+		return e.complexity.User.Name(childComplexity), true
+
+	case "User.todos":
+		if e.complexity.User.Todos == nil {
+			break
+		}
+
+		return e.complexity.User.Todos(childComplexity), true
 
 	}
 	return 0, false
@@ -186,21 +298,183 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "graph/schema.graphqls", Input: `type Language {
-  id: ID!
-  name: String!
+	{Name: "../schema/connection.graphql", Input: `"ページングを伴う結果返却用"
+interface Connection {
+    "ページ情報"
+    pageInfo: PageInfo!
+    "結果一覧（※カーソル情報を含む）"
+    edges: [Edge!]!
+    "検索結果の全件数"
+    totalCount: Int!
 }
 
-type Engineer {
-  id: ID!
-  name: String!
-  age: Int!
-  usable: [Language!]!
+"ページ情報"
+type PageInfo {
+    "次ページ有無"
+    hasNextPage: Boolean!
+    "前ページ有無"
+    hasPreviousPage: Boolean!
+    "当該ページの１レコード目"
+    startCursor: Cursor!
+    "当該ページの最終レコード"
+    endCursor: Cursor!
+}
+
+"検索結果一覧（※カーソル情報を含む）"
+interface Edge {
+    "Nodeインタフェースを実装したtypeなら代入可能"
+    node: Node
+    cursor: Cursor!
+}`, BuiltIn: false},
+	{Name: "../schema/order.graphql", Input: `"並び替え条件"
+input EdgeOrder {
+    "並べ替えキー項目"
+    key: OrderKey!
+    "ソート方向"
+    direction: OrderDirection!
+}
+
+"""
+並べ替えのキー
+汎用的な構造にしたいが以下はGraphQLの仕様として不可だった。
+・enum・・・汎化機能がない。
+・interface・・・inputには実装機能がない。
+・union・・・inputでは要素に持てない。
+とはいえ、並べ替えも共通の仕組みとして提供したく、結果として機能毎に enum フィールドを列挙
+"""
+input OrderKey {
+    "TODO一覧の並べ替えキー"
+    todoOrderKey: TodoOrderKey
+}
+
+"並べ替え方向"
+enum OrderDirection {
+    "昇順"
+    ASC
+    "降順"
+    DESC
+}
+`, BuiltIn: false},
+	{Name: "../schema/pagination.graphql", Input: `"カーソル（１レコードをユニークに特定する識別子）"
+scalar Cursor
+
+"ページング条件"
+input PageCondition {
+    "前ページ遷移条件"
+    backward: BackwardPagination
+    "次ページ遷移条件"
+    forward: ForwardPagination
+    "現在ページ番号（今回のページング実行前の時点のもの）"
+    nowPageNo: Int!
+    "１ページ表示件数"
+    initialLimit: Int
+}
+
+"前ページ遷移条件"
+input BackwardPagination {
+    "取得件数"
+    last: Int!
+    "取得対象識別用カーソル（※前ページ遷移時にこのカーソルよりも前にあるレコードが取得対象）"
+    before: Cursor
+}
+
+"次ページ遷移条件"
+input ForwardPagination {
+    "取得件数"
+    first: Int!
+    "取得対象識別用カーソル（※次ページ遷移時にこのカーソルよりも後ろにあるレコードが取得対象）"
+    after: Cursor
+}
+`, BuiltIn: false},
+	{Name: "../schema/schema.graphql", Input: `# Global Object Identification ... 全データを共通のIDでユニーク化
+interface Node {
+    id: ID!
+}
+
+schema {
+    query: Query
 }
 
 type Query {
-  languages: [Language!]!
-  engineers: [Engineer!]!
+    node(id: ID!): Node
+}
+
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION
+    | FIELD_DEFINITION
+`, BuiltIn: false},
+	{Name: "../schema/text_filter.graphql", Input: `"文字列フィルタ条件"
+input TextFilterCondition {
+    "フィルタ文字列"
+    filterWord: String!
+    "マッチングパターン（※オプション。指定無しの場合は「部分一致」となる。）"
+    matchingPattern: MatchingPattern = PARTIAL_MATCH
+}
+
+"マッチングパターン種別（※要件次第で「前方一致」や「後方一致」も追加）"
+enum MatchingPattern {
+    "部分一致"
+    PARTIAL_MATCH
+    "完全一致"
+    EXACT_MATCH
+}
+`, BuiltIn: false},
+	{Name: "../schema/todo.graphql", Input: `extend type Query {
+  "Relay準拠ページング対応検索によるTODO一覧取得"
+  todoConnection(
+    "文字列フィルタ条件"
+    filterWord: TextFilterCondition
+    "ページング条件"
+    pageCondition: PageCondition
+    "並び替え条件"
+    edgeOrder: EdgeOrder
+  ): TodoConnection
+}
+
+type Todo implements Node {
+  "ID"
+  id: ID!
+  "TODO"
+  text: String!
+  "済みフラグ"
+  done: Boolean!
+  "作成日時"
+  createdAt: Int!
+  "ユーザー情報"
+  user: User! @goField(forceResolver: true)
+}
+
+"TODO並べ替えキー"
+enum TodoOrderKey {
+  "TODO"
+  TEXT
+  "済みフラグ"
+  DONE
+  "作成日時（初期表示時のデフォルト）"
+  CREATED_AT
+  "ユーザー名"
+  USER_NAME
+}
+
+"ページングを伴う結果返却用"
+type TodoConnection implements Connection {
+  "ページ情報"
+  pageInfo: PageInfo!
+  "検索結果一覧（※カーソル情報を含む）"
+  edges: [TodoEdge!]!
+  "検索結果の全件数"
+  totalCount: Int!
+}
+
+"検索結果一覧（※カーソル情報を含む）"
+type TodoEdge implements Edge {
+  node: Todo
+  cursor: Cursor!
+}
+`, BuiltIn: false},
+	{Name: "../schema/user.graphql", Input: `type User {
+  id: ID!
+  name: String!
+  todos: [Todo!]!
 }
 `, BuiltIn: false},
 }
@@ -222,6 +496,54 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_node_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_todoConnection_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.TextFilterCondition
+	if tmp, ok := rawArgs["filterWord"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filterWord"))
+		arg0, err = ec.unmarshalOTextFilterCondition2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTextFilterCondition(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["filterWord"] = arg0
+	var arg1 *model.PageCondition
+	if tmp, ok := rawArgs["pageCondition"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pageCondition"))
+		arg1, err = ec.unmarshalOPageCondition2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐPageCondition(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["pageCondition"] = arg1
+	var arg2 *model.EdgeOrder
+	if tmp, ok := rawArgs["edgeOrder"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("edgeOrder"))
+		arg2, err = ec.unmarshalOEdgeOrder2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐEdgeOrder(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["edgeOrder"] = arg2
 	return args, nil
 }
 
@@ -263,7 +585,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Engineer_id(ctx context.Context, field graphql.CollectedField, obj *model.Engineer) (ret graphql.Marshaler) {
+func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -271,7 +593,7 @@ func (ec *executionContext) _Engineer_id(ctx context.Context, field graphql.Coll
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "Engineer",
+		Object:     "PageInfo",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -281,7 +603,77 @@ func (ec *executionContext) _Engineer_id(ctx context.Context, field graphql.Coll
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return obj.HasNextPage, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PageInfo_hasPreviousPage(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PageInfo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HasPreviousPage, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PageInfo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartCursor, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -295,10 +687,10 @@ func (ec *executionContext) _Engineer_id(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
+	return ec.marshalNCursor2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Engineer_name(ctx context.Context, field graphql.CollectedField, obj *model.Engineer) (ret graphql.Marshaler) {
+func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -306,7 +698,7 @@ func (ec *executionContext) _Engineer_name(ctx context.Context, field graphql.Co
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "Engineer",
+		Object:     "PageInfo",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -316,7 +708,7 @@ func (ec *executionContext) _Engineer_name(ctx context.Context, field graphql.Co
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
+		return obj.EndCursor, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -330,150 +722,10 @@ func (ec *executionContext) _Engineer_name(ctx context.Context, field graphql.Co
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNCursor2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Engineer_age(ctx context.Context, field graphql.CollectedField, obj *model.Engineer) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Engineer",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Age, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Engineer_usable(ctx context.Context, field graphql.CollectedField, obj *model.Engineer) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Engineer",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Usable, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.Language)
-	fc.Result = res
-	return ec.marshalNLanguage2ᚕᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐLanguageᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Language_id(ctx context.Context, field graphql.CollectedField, obj *model.Language) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Language",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Language_name(ctx context.Context, field graphql.CollectedField, obj *model.Language) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Language",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Query_languages(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_node(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -489,26 +741,30 @@ func (ec *executionContext) _Query_languages(ctx context.Context, field graphql.
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_node_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Languages(rctx)
+		return ec.resolvers.Query().Node(rctx, args["id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Language)
+	res := resTmp.(model.Node)
 	fc.Result = res
-	return ec.marshalNLanguage2ᚕᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐLanguageᚄ(ctx, field.Selections, res)
+	return ec.marshalONode2githubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐNode(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_engineers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_todoConnection(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -524,23 +780,27 @@ func (ec *executionContext) _Query_engineers(ctx context.Context, field graphql.
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_todoConnection_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Engineers(rctx)
+		return ec.resolvers.Query().TodoConnection(rctx, args["filterWord"].(*model.TextFilterCondition), args["pageCondition"].(*model.PageCondition), args["edgeOrder"].(*model.EdgeOrder))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Engineer)
+	res := resTmp.(*model.TodoConnection)
 	fc.Result = res
-	return ec.marshalNEngineer2ᚕᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐEngineerᚄ(ctx, field.Selections, res)
+	return ec.marshalOTodoConnection2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -612,6 +872,458 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	res := resTmp.(*introspection.Schema)
 	fc.Result = res
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.CollectedField, obj *model.Todo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Todo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.CollectedField, obj *model.Todo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Todo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Text, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.CollectedField, obj *model.Todo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Todo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Done, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Todo_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.Todo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Todo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.CollectedField, obj *model.Todo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Todo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Todo().User(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _TodoConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.TodoConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TodoConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _TodoConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.TodoConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TodoConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.TodoEdge)
+	fc.Result = res
+	return ec.marshalNTodoEdge2ᚕᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoEdgeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _TodoConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.TodoConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TodoConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _TodoEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.TodoEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TodoEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Todo)
+	fc.Result = res
+	return ec.marshalOTodo2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _TodoEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.TodoEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TodoEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNCursor2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_name(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_todos(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Todos, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Todo)
+	fc.Result = res
+	return ec.marshalNTodo2ᚕᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -1701,74 +2413,270 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputBackwardPagination(ctx context.Context, obj interface{}) (model.BackwardPagination, error) {
+	var it model.BackwardPagination
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "last":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+			it.Last, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "before":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
+			it.Before, err = ec.unmarshalOCursor2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputEdgeOrder(ctx context.Context, obj interface{}) (model.EdgeOrder, error) {
+	var it model.EdgeOrder
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "key":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
+			it.Key, err = ec.unmarshalNOrderKey2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐOrderKey(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "direction":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			it.Direction, err = ec.unmarshalNOrderDirection2githubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐOrderDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputForwardPagination(ctx context.Context, obj interface{}) (model.ForwardPagination, error) {
+	var it model.ForwardPagination
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "first":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+			it.First, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "after":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+			it.After, err = ec.unmarshalOCursor2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputOrderKey(ctx context.Context, obj interface{}) (model.OrderKey, error) {
+	var it model.OrderKey
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "todoOrderKey":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("todoOrderKey"))
+			it.TodoOrderKey, err = ec.unmarshalOTodoOrderKey2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoOrderKey(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputPageCondition(ctx context.Context, obj interface{}) (model.PageCondition, error) {
+	var it model.PageCondition
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "backward":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("backward"))
+			it.Backward, err = ec.unmarshalOBackwardPagination2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐBackwardPagination(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "forward":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("forward"))
+			it.Forward, err = ec.unmarshalOForwardPagination2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐForwardPagination(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nowPageNo":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nowPageNo"))
+			it.NowPageNo, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "initialLimit":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("initialLimit"))
+			it.InitialLimit, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTextFilterCondition(ctx context.Context, obj interface{}) (model.TextFilterCondition, error) {
+	var it model.TextFilterCondition
+	var asMap = obj.(map[string]interface{})
+
+	if _, present := asMap["matchingPattern"]; !present {
+		asMap["matchingPattern"] = "PARTIAL_MATCH"
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "filterWord":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filterWord"))
+			it.FilterWord, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "matchingPattern":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matchingPattern"))
+			it.MatchingPattern, err = ec.unmarshalOMatchingPattern2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐMatchingPattern(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
+
+func (ec *executionContext) _Connection(ctx context.Context, sel ast.SelectionSet, obj model.Connection) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.TodoConnection:
+		return ec._TodoConnection(ctx, sel, &obj)
+	case *model.TodoConnection:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TodoConnection(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _Edge(ctx context.Context, sel ast.SelectionSet, obj model.Edge) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.TodoEdge:
+		return ec._TodoEdge(ctx, sel, &obj)
+	case *model.TodoEdge:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TodoEdge(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj model.Node) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.Todo:
+		return ec._Todo(ctx, sel, &obj)
+	case *model.Todo:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Todo(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
 
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
 
-var engineerImplementors = []string{"Engineer"}
+var pageInfoImplementors = []string{"PageInfo"}
 
-func (ec *executionContext) _Engineer(ctx context.Context, sel ast.SelectionSet, obj *model.Engineer) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, engineerImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Engineer")
-		case "id":
-			out.Values[i] = ec._Engineer_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "name":
-			out.Values[i] = ec._Engineer_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "age":
-			out.Values[i] = ec._Engineer_age(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "usable":
-			out.Values[i] = ec._Engineer_usable(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var languageImplementors = []string{"Language"}
-
-func (ec *executionContext) _Language(ctx context.Context, sel ast.SelectionSet, obj *model.Language) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, languageImplementors)
+func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet, obj *model.PageInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, pageInfoImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("Language")
-		case "id":
-			out.Values[i] = ec._Language_id(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("PageInfo")
+		case "hasNextPage":
+			out.Values[i] = ec._PageInfo_hasNextPage(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "name":
-			out.Values[i] = ec._Language_name(ctx, field, obj)
+		case "hasPreviousPage":
+			out.Values[i] = ec._PageInfo_hasPreviousPage(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "startCursor":
+			out.Values[i] = ec._PageInfo_startCursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "endCursor":
+			out.Values[i] = ec._PageInfo_endCursor(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -1798,7 +2706,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "languages":
+		case "node":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -1806,13 +2714,10 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_languages(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
+				res = ec._Query_node(ctx, field)
 				return res
 			})
-		case "engineers":
+		case "todoConnection":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -1820,16 +2725,172 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_engineers(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
+				res = ec._Query_todoConnection(ctx, field)
 				return res
 			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
 			out.Values[i] = ec._Query___schema(ctx, field)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var todoImplementors = []string{"Todo", "Node"}
+
+func (ec *executionContext) _Todo(ctx context.Context, sel ast.SelectionSet, obj *model.Todo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, todoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Todo")
+		case "id":
+			out.Values[i] = ec._Todo_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "text":
+			out.Values[i] = ec._Todo_text(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "done":
+			out.Values[i] = ec._Todo_done(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._Todo_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "user":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Todo_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var todoConnectionImplementors = []string{"TodoConnection", "Connection"}
+
+func (ec *executionContext) _TodoConnection(ctx context.Context, sel ast.SelectionSet, obj *model.TodoConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, todoConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TodoConnection")
+		case "pageInfo":
+			out.Values[i] = ec._TodoConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "edges":
+			out.Values[i] = ec._TodoConnection_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._TodoConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var todoEdgeImplementors = []string{"TodoEdge", "Edge"}
+
+func (ec *executionContext) _TodoEdge(ctx context.Context, sel ast.SelectionSet, obj *model.TodoEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, todoEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TodoEdge")
+		case "node":
+			out.Values[i] = ec._TodoEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._TodoEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var userImplementors = []string{"User"}
+
+func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *model.User) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("User")
+		case "id":
+			out.Values[i] = ec._User_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "name":
+			out.Values[i] = ec._User_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "todos":
+			out.Values[i] = ec._User_todos(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2101,51 +3162,19 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNEngineer2ᚕᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐEngineerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Engineer) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNEngineer2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐEngineer(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
+func (ec *executionContext) unmarshalNCursor2string(ctx context.Context, v interface{}) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNEngineer2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐEngineer(ctx context.Context, sel ast.SelectionSet, v *model.Engineer) graphql.Marshaler {
-	if v == nil {
+func (ec *executionContext) marshalNCursor2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
-		return graphql.Null
 	}
-	return ec._Engineer(ctx, sel, v)
+	return res
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
@@ -2178,7 +3207,47 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) marshalNLanguage2ᚕᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐLanguageᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Language) graphql.Marshaler {
+func (ec *executionContext) unmarshalNOrderDirection2githubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐOrderDirection(ctx context.Context, v interface{}) (model.OrderDirection, error) {
+	var res model.OrderDirection
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNOrderDirection2githubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐOrderDirection(ctx context.Context, sel ast.SelectionSet, v model.OrderDirection) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNOrderKey2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐOrderKey(ctx context.Context, v interface{}) (*model.OrderKey, error) {
+	res, err := ec.unmarshalInputOrderKey(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNPageInfo2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v *model.PageInfo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._PageInfo(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNTodo2ᚕᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Todo) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -2202,7 +3271,7 @@ func (ec *executionContext) marshalNLanguage2ᚕᚖgithubᚗcomᚋsky0621ᚋstud
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNLanguage2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐLanguage(ctx, sel, v[i])
+			ret[i] = ec.marshalNTodo2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodo(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -2215,29 +3284,75 @@ func (ec *executionContext) marshalNLanguage2ᚕᚖgithubᚗcomᚋsky0621ᚋstud
 	return ret
 }
 
-func (ec *executionContext) marshalNLanguage2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐLanguage(ctx context.Context, sel ast.SelectionSet, v *model.Language) graphql.Marshaler {
+func (ec *executionContext) marshalNTodo2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodo(ctx context.Context, sel ast.SelectionSet, v *model.Todo) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
-	return ec._Language(ctx, sel, v)
+	return ec._Todo(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
-	res, err := graphql.UnmarshalString(v)
-	return res, graphql.ErrorOnPath(ctx, err)
+func (ec *executionContext) marshalNTodoEdge2ᚕᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TodoEdge) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTodoEdge2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
 }
 
-func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalString(v)
-	if res == graphql.Null {
+func (ec *executionContext) marshalNTodoEdge2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoEdge(ctx context.Context, sel ast.SelectionSet, v *model.TodoEdge) graphql.Marshaler {
+	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
+		return graphql.Null
 	}
-	return res
+	return ec._TodoEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUser2githubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
+	return ec._User(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._User(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -2469,6 +3584,14 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
+func (ec *executionContext) unmarshalOBackwardPagination2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐBackwardPagination(ctx context.Context, v interface{}) (*model.BackwardPagination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputBackwardPagination(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2493,6 +3616,83 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return graphql.MarshalBoolean(*v)
 }
 
+func (ec *executionContext) unmarshalOCursor2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalString(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOCursor2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalString(*v)
+}
+
+func (ec *executionContext) unmarshalOEdgeOrder2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐEdgeOrder(ctx context.Context, v interface{}) (*model.EdgeOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputEdgeOrder(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOForwardPagination2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐForwardPagination(ctx context.Context, v interface{}) (*model.ForwardPagination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputForwardPagination(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalInt(*v)
+}
+
+func (ec *executionContext) unmarshalOMatchingPattern2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐMatchingPattern(ctx context.Context, v interface{}) (*model.MatchingPattern, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.MatchingPattern)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMatchingPattern2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐMatchingPattern(ctx context.Context, sel ast.SelectionSet, v *model.MatchingPattern) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) marshalONode2githubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐNode(ctx context.Context, sel ast.SelectionSet, v model.Node) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Node(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOPageCondition2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐPageCondition(ctx context.Context, v interface{}) (*model.PageCondition, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputPageCondition(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2515,6 +3715,44 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return graphql.MarshalString(*v)
+}
+
+func (ec *executionContext) unmarshalOTextFilterCondition2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTextFilterCondition(ctx context.Context, v interface{}) (*model.TextFilterCondition, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputTextFilterCondition(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTodo2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodo(ctx context.Context, sel ast.SelectionSet, v *model.Todo) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Todo(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOTodoConnection2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoConnection(ctx context.Context, sel ast.SelectionSet, v *model.TodoConnection) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._TodoConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOTodoOrderKey2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoOrderKey(ctx context.Context, v interface{}) (*model.TodoOrderKey, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.TodoOrderKey)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTodoOrderKey2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoOrderKey(ctx context.Context, sel ast.SelectionSet, v *model.TodoOrderKey) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

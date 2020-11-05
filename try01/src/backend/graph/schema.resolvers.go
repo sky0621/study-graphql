@@ -11,11 +11,7 @@ import (
 	"github.com/sky0621/study-graphql/try01/src/backend/graph/model"
 )
 
-func (r *queryResolver) Languages(ctx context.Context) ([]*model.Language, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *queryResolver) Engineers(ctx context.Context) ([]*model.Engineer, error) {
+func (r *queryResolver) Node(ctx context.Context, id string) (model.Node, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

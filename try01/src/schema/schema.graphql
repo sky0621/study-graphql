@@ -1,0 +1,15 @@
+# Global Object Identification ... 全データを共通のIDでユニーク化
+interface Node {
+    id: ID!
+}
+
+schema {
+    query: Query
+}
+
+type Query {
+    node(id: ID!): Node
+}
+
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION
+    | FIELD_DEFINITION
