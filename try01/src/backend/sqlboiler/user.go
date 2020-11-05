@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -23,8 +22,8 @@ import (
 
 // User is an object representing the database table.
 type User struct {
-	ID   null.Int64  `boil:"id" json:"id,omitempty" toml:"id" yaml:"id,omitempty"`
-	Name null.String `boil:"name" json:"name,omitempty" toml:"name" yaml:"name,omitempty"`
+	ID   int64  `boil:"id" json:"id" toml:"id" yaml:"id"`
+	Name string `boil:"name" json:"name" toml:"name" yaml:"name"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -41,11 +40,11 @@ var UserColumns = struct {
 // Generated where
 
 var UserWhere = struct {
-	ID   whereHelpernull_Int64
-	Name whereHelpernull_String
+	ID   whereHelperint64
+	Name whereHelperstring
 }{
-	ID:   whereHelpernull_Int64{field: "\"user\".\"id\""},
-	Name: whereHelpernull_String{field: "\"user\".\"name\""},
+	ID:   whereHelperint64{field: "\"user\".\"id\""},
+	Name: whereHelperstring{field: "\"user\".\"name\""},
 }
 
 // UserRels is where relationship names are stored.
@@ -354,7 +353,7 @@ func Users(mods ...qm.QueryMod) userQuery {
 
 // FindUser retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindUser(ctx context.Context, exec boil.ContextExecutor, iD null.Int64, selectCols ...string) (*User, error) {
+func FindUser(ctx context.Context, exec boil.ContextExecutor, iD int64, selectCols ...string) (*User, error) {
 	userObj := &User{}
 
 	sel := "*"
@@ -437,15 +436,26 @@ func (o *User) Insert(ctx context.Context, exec boil.ContextExecutor, columns bo
 		fmt.Fprintln(writer, cache.query)
 		fmt.Fprintln(writer, vals)
 	}
-	_, err = exec.ExecContext(ctx, cache.query, vals...)
+	result, err := exec.ExecContext(ctx, cache.query, vals...)
 
 	if err != nil {
 		return errors.Wrap(err, "sqlboiler: unable to insert into user")
 	}
 
+	var lastID int64
 	var identifierCols []interface{}
 
 	if len(cache.retMapping) == 0 {
+		goto CacheNoHooks
+	}
+
+	lastID, err = result.LastInsertId()
+	if err != nil {
+		return ErrSyncFail
+	}
+
+	o.ID = int64(lastID)
+	if lastID != 0 && len(cache.retMapping) == 1 && cache.retMapping[0] == userMapping["id"] {
 		goto CacheNoHooks
 	}
 
@@ -749,7 +759,7 @@ func (o *UserSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) er
 }
 
 // UserExists checks if the User row exists.
-func UserExists(ctx context.Context, exec boil.ContextExecutor, iD null.Int64) (bool, error) {
+func UserExists(ctx context.Context, exec boil.ContextExecutor, iD int64) (bool, error) {
 	var exists bool
 	sql := "select exists(select 1 from \"user\" where \"id\"=? limit 1)"
 

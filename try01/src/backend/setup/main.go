@@ -34,14 +34,14 @@ func main() {
 
 var schema = `
 CREATE TABLE todo (
-    id integer primary key ,
-    task text,
-    user_id integer
+    id integer not null primary key ,
+    task text not null,
+    user_id integer not null
 );
 
 CREATE TABLE user (
-    id integer primary key ,
-    name text
+    id integer not null primary key ,
+    name text not null
 );
 `
 

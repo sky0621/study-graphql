@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -23,9 +22,9 @@ import (
 
 // Todo is an object representing the database table.
 type Todo struct {
-	ID     null.Int64  `boil:"id" json:"id,omitempty" toml:"id" yaml:"id,omitempty"`
-	Task   null.String `boil:"task" json:"task,omitempty" toml:"task" yaml:"task,omitempty"`
-	UserID null.Int64  `boil:"user_id" json:"user_id,omitempty" toml:"user_id" yaml:"user_id,omitempty"`
+	ID     int64  `boil:"id" json:"id" toml:"id" yaml:"id"`
+	Task   string `boil:"task" json:"task" toml:"task" yaml:"task"`
+	UserID int64  `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
 
 	R *todoR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L todoL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -43,60 +42,60 @@ var TodoColumns = struct {
 
 // Generated where
 
-type whereHelpernull_Int64 struct{ field string }
+type whereHelperint64 struct{ field string }
 
-func (w whereHelpernull_Int64) EQ(x null.Int64) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, false, x)
+func (w whereHelperint64) EQ(x int64) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperint64) NEQ(x int64) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperint64) LT(x int64) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperint64) LTE(x int64) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperint64) GT(x int64) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperint64) GTE(x int64) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
+func (w whereHelperint64) IN(slice []int64) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
 }
-func (w whereHelpernull_Int64) NEQ(x null.Int64) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, true, x)
-}
-func (w whereHelpernull_Int64) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
-func (w whereHelpernull_Int64) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
-func (w whereHelpernull_Int64) LT(x null.Int64) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpernull_Int64) LTE(x null.Int64) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpernull_Int64) GT(x null.Int64) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpernull_Int64) GTE(x null.Int64) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
+func (w whereHelperint64) NIN(slice []int64) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
 }
 
-type whereHelpernull_String struct{ field string }
+type whereHelperstring struct{ field string }
 
-func (w whereHelpernull_String) EQ(x null.String) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, false, x)
+func (w whereHelperstring) EQ(x string) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperstring) NEQ(x string) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperstring) LT(x string) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperstring) LTE(x string) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperstring) GT(x string) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperstring) GTE(x string) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
+func (w whereHelperstring) IN(slice []string) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
 }
-func (w whereHelpernull_String) NEQ(x null.String) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, true, x)
-}
-func (w whereHelpernull_String) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
-func (w whereHelpernull_String) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
-func (w whereHelpernull_String) LT(x null.String) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpernull_String) LTE(x null.String) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpernull_String) GT(x null.String) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpernull_String) GTE(x null.String) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
+func (w whereHelperstring) NIN(slice []string) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
 }
 
 var TodoWhere = struct {
-	ID     whereHelpernull_Int64
-	Task   whereHelpernull_String
-	UserID whereHelpernull_Int64
+	ID     whereHelperint64
+	Task   whereHelperstring
+	UserID whereHelperint64
 }{
-	ID:     whereHelpernull_Int64{field: "\"todo\".\"id\""},
-	Task:   whereHelpernull_String{field: "\"todo\".\"task\""},
-	UserID: whereHelpernull_Int64{field: "\"todo\".\"user_id\""},
+	ID:     whereHelperint64{field: "\"todo\".\"id\""},
+	Task:   whereHelperstring{field: "\"todo\".\"task\""},
+	UserID: whereHelperint64{field: "\"todo\".\"user_id\""},
 }
 
 // TodoRels is where relationship names are stored.
@@ -405,7 +404,7 @@ func Todos(mods ...qm.QueryMod) todoQuery {
 
 // FindTodo retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindTodo(ctx context.Context, exec boil.ContextExecutor, iD null.Int64, selectCols ...string) (*Todo, error) {
+func FindTodo(ctx context.Context, exec boil.ContextExecutor, iD int64, selectCols ...string) (*Todo, error) {
 	todoObj := &Todo{}
 
 	sel := "*"
@@ -488,15 +487,26 @@ func (o *Todo) Insert(ctx context.Context, exec boil.ContextExecutor, columns bo
 		fmt.Fprintln(writer, cache.query)
 		fmt.Fprintln(writer, vals)
 	}
-	_, err = exec.ExecContext(ctx, cache.query, vals...)
+	result, err := exec.ExecContext(ctx, cache.query, vals...)
 
 	if err != nil {
 		return errors.Wrap(err, "sqlboiler: unable to insert into todo")
 	}
 
+	var lastID int64
 	var identifierCols []interface{}
 
 	if len(cache.retMapping) == 0 {
+		goto CacheNoHooks
+	}
+
+	lastID, err = result.LastInsertId()
+	if err != nil {
+		return ErrSyncFail
+	}
+
+	o.ID = int64(lastID)
+	if lastID != 0 && len(cache.retMapping) == 1 && cache.retMapping[0] == todoMapping["id"] {
 		goto CacheNoHooks
 	}
 
@@ -800,7 +810,7 @@ func (o *TodoSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) er
 }
 
 // TodoExists checks if the Todo row exists.
-func TodoExists(ctx context.Context, exec boil.ContextExecutor, iD null.Int64) (bool, error) {
+func TodoExists(ctx context.Context, exec boil.ContextExecutor, iD int64) (bool, error) {
 	var exists bool
 	sql := "select exists(select 1 from \"todo\" where \"id\"=? limit 1)"
 
