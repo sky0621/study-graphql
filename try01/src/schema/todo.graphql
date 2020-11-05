@@ -14,23 +14,17 @@ type Todo implements Node {
   "ID"
   id: ID!
   "TODO"
-  text: String!
-  "済みフラグ"
-  done: Boolean!
-  "作成日時"
-  createdAt: Int!
+  task: String!
   "ユーザー情報"
   user: User! @goField(forceResolver: true)
 }
 
 "TODO並べ替えキー"
 enum TodoOrderKey {
+  "ID"
+  ID
   "TODO"
-  TEXT
-  "済みフラグ"
-  DONE
-  "作成日時（初期表示時のデフォルト）"
-  CREATED_AT
+  TASK
   "ユーザー名"
   USER_NAME
 }

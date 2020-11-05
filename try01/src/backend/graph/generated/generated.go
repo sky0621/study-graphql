@@ -57,11 +57,9 @@ type ComplexityRoot struct {
 	}
 
 	Todo struct {
-		CreatedAt func(childComplexity int) int
-		Done      func(childComplexity int) int
-		ID        func(childComplexity int) int
-		Text      func(childComplexity int) int
-		User      func(childComplexity int) int
+		ID   func(childComplexity int) int
+		Task func(childComplexity int) int
+		User func(childComplexity int) int
 	}
 
 	TodoConnection struct {
@@ -76,9 +74,8 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		ID    func(childComplexity int) int
-		Name  func(childComplexity int) int
-		Todos func(childComplexity int) int
+		ID   func(childComplexity int) int
+		Name func(childComplexity int) int
 	}
 }
 
@@ -157,20 +154,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.TodoConnection(childComplexity, args["filterWord"].(*model.TextFilterCondition), args["pageCondition"].(*model.PageCondition), args["edgeOrder"].(*model.EdgeOrder)), true
 
-	case "Todo.createdAt":
-		if e.complexity.Todo.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.Todo.CreatedAt(childComplexity), true
-
-	case "Todo.done":
-		if e.complexity.Todo.Done == nil {
-			break
-		}
-
-		return e.complexity.Todo.Done(childComplexity), true
-
 	case "Todo.id":
 		if e.complexity.Todo.ID == nil {
 			break
@@ -178,12 +161,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Todo.ID(childComplexity), true
 
-	case "Todo.text":
-		if e.complexity.Todo.Text == nil {
+	case "Todo.task":
+		if e.complexity.Todo.Task == nil {
 			break
 		}
 
-		return e.complexity.Todo.Text(childComplexity), true
+		return e.complexity.Todo.Task(childComplexity), true
 
 	case "Todo.user":
 		if e.complexity.Todo.User == nil {
@@ -240,13 +223,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.Name(childComplexity), true
-
-	case "User.todos":
-		if e.complexity.User.Todos == nil {
-			break
-		}
-
-		return e.complexity.User.Todos(childComplexity), true
 
 	}
 	return 0, false
@@ -434,23 +410,17 @@ type Todo implements Node {
   "ID"
   id: ID!
   "TODO"
-  text: String!
-  "済みフラグ"
-  done: Boolean!
-  "作成日時"
-  createdAt: Int!
+  task: String!
   "ユーザー情報"
   user: User! @goField(forceResolver: true)
 }
 
 "TODO並べ替えキー"
 enum TodoOrderKey {
+  "ID"
+  ID
   "TODO"
-  TEXT
-  "済みフラグ"
-  DONE
-  "作成日時（初期表示時のデフォルト）"
-  CREATED_AT
+  TASK
   "ユーザー名"
   USER_NAME
 }
@@ -474,7 +444,6 @@ type TodoEdge implements Edge {
 	{Name: "../schema/user.graphql", Input: `type User {
   id: ID!
   name: String!
-  todos: [Todo!]!
 }
 `, BuiltIn: false},
 }
@@ -904,12 +873,12 @@ func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.Collecte
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
+	return ec.marshalNID2int64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.CollectedField, obj *model.Todo) (ret graphql.Marshaler) {
+func (ec *executionContext) _Todo_task(ctx context.Context, field graphql.CollectedField, obj *model.Todo) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -927,7 +896,7 @@ func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.Collec
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Text, nil
+		return obj.Task, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -942,76 +911,6 @@ func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.Collec
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.CollectedField, obj *model.Todo) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Todo",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Done, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Todo_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.Todo) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Todo",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.CollectedField, obj *model.Todo) (ret graphql.Marshaler) {
@@ -1251,9 +1150,9 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
+	return ec.marshalNID2int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_name(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -1289,41 +1188,6 @@ func (ec *executionContext) _User_name(ctx context.Context, field graphql.Collec
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _User_todos(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Todos, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.Todo)
-	fc.Result = res
-	return ec.marshalNTodo2ᚕᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -2759,18 +2623,8 @@ func (ec *executionContext) _Todo(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
-		case "text":
-			out.Values[i] = ec._Todo_text(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
-		case "done":
-			out.Values[i] = ec._Todo_done(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
-		case "createdAt":
-			out.Values[i] = ec._Todo_createdAt(ctx, field, obj)
+		case "task":
+			out.Values[i] = ec._Todo_task(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -2883,11 +2737,6 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "name":
 			out.Values[i] = ec._User_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "todos":
-			out.Values[i] = ec._User_todos(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -3177,6 +3026,21 @@ func (ec *executionContext) marshalNCursor2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) unmarshalNID2int64(ctx context.Context, v interface{}) (int64, error) {
+	res, err := graphql.UnmarshalInt64(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNID2int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
+	res := graphql.MarshalInt64(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3245,53 +3109,6 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) marshalNTodo2ᚕᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Todo) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNTodo2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodo(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
-}
-
-func (ec *executionContext) marshalNTodo2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodo(ctx context.Context, sel ast.SelectionSet, v *model.Todo) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	return ec._Todo(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNTodoEdge2ᚕᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TodoEdge) graphql.Marshaler {

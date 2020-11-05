@@ -89,21 +89,6 @@ type TextFilterCondition struct {
 	MatchingPattern *MatchingPattern `json:"matchingPattern"`
 }
 
-type Todo struct {
-	// ID
-	ID string `json:"id"`
-	// TODO
-	Text string `json:"text"`
-	// 済みフラグ
-	Done bool `json:"done"`
-	// 作成日時
-	CreatedAt int `json:"createdAt"`
-	// ユーザー情報
-	User *User `json:"user"`
-}
-
-func (Todo) IsNode() {}
-
 // ページングを伴う結果返却用
 type TodoConnection struct {
 	// ページ情報
@@ -123,12 +108,6 @@ type TodoEdge struct {
 }
 
 func (TodoEdge) IsEdge() {}
-
-type User struct {
-	ID    string  `json:"id"`
-	Name  string  `json:"name"`
-	Todos []*Todo `json:"todos"`
-}
 
 // マッチングパターン種別（※要件次第で「前方一致」や「後方一致」も追加）
 type MatchingPattern string
@@ -222,26 +201,23 @@ func (e OrderDirection) MarshalGQL(w io.Writer) {
 type TodoOrderKey string
 
 const (
+	// ID
+	TodoOrderKeyID TodoOrderKey = "ID"
 	// TODO
-	TodoOrderKeyText TodoOrderKey = "TEXT"
-	// 済みフラグ
-	TodoOrderKeyDone TodoOrderKey = "DONE"
-	// 作成日時（初期表示時のデフォルト）
-	TodoOrderKeyCreatedAt TodoOrderKey = "CREATED_AT"
+	TodoOrderKeyTask TodoOrderKey = "TASK"
 	// ユーザー名
 	TodoOrderKeyUserName TodoOrderKey = "USER_NAME"
 )
 
 var AllTodoOrderKey = []TodoOrderKey{
-	TodoOrderKeyText,
-	TodoOrderKeyDone,
-	TodoOrderKeyCreatedAt,
+	TodoOrderKeyID,
+	TodoOrderKeyTask,
 	TodoOrderKeyUserName,
 }
 
 func (e TodoOrderKey) IsValid() bool {
 	switch e {
-	case TodoOrderKeyText, TodoOrderKeyDone, TodoOrderKeyCreatedAt, TodoOrderKeyUserName:
+	case TodoOrderKeyID, TodoOrderKeyTask, TodoOrderKeyUserName:
 		return true
 	}
 	return false

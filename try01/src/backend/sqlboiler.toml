@@ -1,0 +1,5 @@
+output   = "sqlboiler"
+pkgname  = "sqlboiler"
+
+[sqlite3]
+  dbname = "data.db"

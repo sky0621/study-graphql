@@ -12,11 +12,15 @@ import (
 )
 
 func (r *queryResolver) TodoConnection(ctx context.Context, filterWord *model.TextFilterCondition, pageCondition *model.PageCondition, edgeOrder *model.EdgeOrder) (*model.TodoConnection, error) {
+	// FIXME:
 	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *todoResolver) User(ctx context.Context, obj *model.Todo) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	if obj == nil {
+		return nil, nil
+	}
+	return For(ctx).UsersByIDs.Load(obj.UserID)
 }
 
 // Todo returns generated.TodoResolver implementation.
