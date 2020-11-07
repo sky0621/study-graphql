@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -40,19 +41,46 @@ func (r *queryResolver) TodoConnection(ctx context.Context,
 	}
 
 	/*
-	 * ページング設定
-	 */
-	if pageCondition.ExistsPaging() {
-		// FIXME:
-
-	}
-
-	/*
 	 * 並べ替え設定
 	 */
 	if edgeOrder.ExistsOrder() {
-		// FIXME:
+		key := sqlboiler.TodoColumns.ID
+		// `todo` テーブルの何のカラムを並べ替えのキーにしているか
+		if edgeOrder.Key.TodoOrderKey != nil {
+			switch *edgeOrder.Key.TodoOrderKey {
+			case model.TodoOrderKeyID:
+				// MEMO: デフォルトキーにしてるので特に処理なし
+			case model.TodoOrderKeyTask:
+				key = sqlboiler.TodoColumns.Task
+			case model.TodoOrderKeyUserName:
+				// FIXME: 現状、 `user` テーブルの情報取得は dataloader 経由にしているため使用不可。
+				// `todo` : `user` = N:1 を想定するなら、 `user` テーブルの情報を dataloader 経由でなく
+				// inner join で取得する方式に変更すれば使用可能になるか。
+			}
+		}
+		mods = append(mods, qm.OrderBy(fmt.Sprintf("%s %s", key, edgeOrder.Direction.String())))
+	}
 
+	/*
+	 * ページング設定
+	 */
+	if pageCondition.ExistsPaging() {
+		/*
+		 * ページング指定無しの初期ページビュー
+		 */
+		if pageCondition.IsInitialPageView() {
+			/*
+			 * 表示件数指定がある場合
+			 */
+			if pageCondition.HasInitialLimit() {
+				if edgeOrder.ExistsOrder() {
+					switch edgeOrder.Direction {
+					case model.OrderDirectionAsc:
+					case model.OrderDirectionDesc:
+					}
+				}
+			}
+		}
 	}
 
 	mods = append(mods, qm.Limit(3))

@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: for-backend
-data:
-  DATASOURCE: USER:PASS@unix(/cloudsql/INSTANCE)/DB?parseTime=True
