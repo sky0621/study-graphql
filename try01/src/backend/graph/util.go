@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-func CreateCursor(modelName string, pk int64) string {
-	return base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf("%s#####%d", modelName, pk)))
+func CreateCursor(modelName string, key interface{}) string {
+	return base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf("%s#####%v", modelName, key)))
 }
 
 func DecodeCursor(cursor string) (string, string, error) {

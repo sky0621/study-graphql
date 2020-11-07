@@ -8,11 +8,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-
 	"github.com/sky0621/study-graphql/try01/src/backend/graph/generated"
 	"github.com/sky0621/study-graphql/try01/src/backend/graph/model"
 	"github.com/sky0621/study-graphql/try01/src/backend/sqlboiler"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 func (r *queryResolver) TodoConnection(ctx context.Context,
@@ -43,47 +42,60 @@ func (r *queryResolver) TodoConnection(ctx context.Context,
 	/*
 	 * 並べ替え設定
 	 */
+	orderKey := sqlboiler.TodoColumns.ID
 	if edgeOrder.ExistsOrder() {
-		key := sqlboiler.TodoColumns.ID
 		// `todo` テーブルの何のカラムを並べ替えのキーにしているか
 		if edgeOrder.Key.TodoOrderKey != nil {
 			switch *edgeOrder.Key.TodoOrderKey {
 			case model.TodoOrderKeyID:
 				// MEMO: デフォルトキーにしてるので特に処理なし
 			case model.TodoOrderKeyTask:
-				key = sqlboiler.TodoColumns.Task
+				orderKey = sqlboiler.TodoColumns.Task
 			case model.TodoOrderKeyUserName:
 				// FIXME: 現状、 `user` テーブルの情報取得は dataloader 経由にしているため使用不可。
 				// `todo` : `user` = N:1 を想定するなら、 `user` テーブルの情報を dataloader 経由でなく
 				// inner join で取得する方式に変更すれば使用可能になるか。
 			}
 		}
-		mods = append(mods, qm.OrderBy(fmt.Sprintf("%s %s", key, edgeOrder.Direction.String())))
+		mods = append(mods, qm.OrderBy(fmt.Sprintf("%s %s", orderKey, edgeOrder.Direction.String())))
 	}
 
 	/*
 	 * ページング設定
 	 */
-	if pageCondition.ExistsPaging() {
+	if pageCondition.IsInitialPageView() {
 		/*
 		 * ページング指定無しの初期ページビュー
 		 */
-		if pageCondition.IsInitialPageView() {
-			/*
-			 * 表示件数指定がある場合
-			 */
-			if pageCondition.HasInitialLimit() {
-				if edgeOrder.ExistsOrder() {
-					switch edgeOrder.Direction {
-					case model.OrderDirectionAsc:
-					case model.OrderDirectionDesc:
-					}
-				}
+		// 表示件数が指定されている場合
+		if pageCondition.HasInitialLimit() {
+			mods = append(mods, qm.Limit(*pageCondition.InitialLimit))
+		}
+	} else {
+		/*
+		 * 前ページへの遷移指示
+		 */
+		if pageCondition.Backward != nil {
+			// 表示件数が指定されている場合
+			if pageCondition.Backward.Last > 0 {
+				mods = append(mods, qm.Limit(pageCondition.Backward.Last))
 			}
+			// 1, 2, 3, [[4], 5, 6], 7, 8, 9
+
+			// 9, 8, 7, [[6], 5, 4], 3, 2, 1
+
+		}
+		/*
+		 * 次ページへの遷移指示
+		 */
+		if pageCondition.Forward != nil {
+			// 表示件数が指定されている場合
+			if pageCondition.Forward.First > 0 {
+				mods = append(mods, qm.Limit(pageCondition.Forward.First))
+			}
+
 		}
 	}
-
-	mods = append(mods, qm.Limit(3))
 
 	/*
 	 * 検索実行
@@ -105,6 +117,9 @@ func (r *queryResolver) TodoConnection(ctx context.Context,
 				Task:   todo.Task,
 				UserID: todo.UserID,
 			},
+			// 単なるページングだけでなく、指定のキーで昇順・降順の並べ替えをする要件がある場合、
+			// カーソルに含める要素を「その時、並べ替えのキーに指定されている要素」にすると、
+			// 次回ページング時、カーソルをデコードした要素よりも前（ないし後）という条件指定が可能。
 			Cursor: CreateCursor("todo", todo.ID),
 		})
 	}
@@ -128,6 +143,7 @@ func (r *queryResolver) TodoConnection(ctx context.Context,
 	return todoConn, nil
 }
 
+// フィルタの結果、０件だった場合の空リターン用
 func emptyTodoConnection() *model.TodoConnection {
 	return &model.TodoConnection{
 		PageInfo: &model.PageInfo{
@@ -137,6 +153,11 @@ func emptyTodoConnection() *model.TodoConnection {
 	}
 }
 
+func selectCursorKey(orderKey string) {
+	// FIXME:
+}
+
+// todo : user = N : 1 を想定するならあえて dataloader でなくてもよいか？
 func (r *todoResolver) User(ctx context.Context, obj *model.Todo) (*model.User, error) {
 	if obj == nil {
 		return nil, nil
