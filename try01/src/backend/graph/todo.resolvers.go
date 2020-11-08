@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
@@ -14,6 +15,9 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
+// 前提
+// ページングの途中でも、並べ替え方法が変わったら、再び１ページ目から表示し直すという仕様であること。
+// 並べ替えに指定するキーとなる要素は（極力）ユニークな情報（同じ値で複数件存在することがない）であること。
 func (r *queryResolver) TodoConnection(ctx context.Context,
 	filterWord *model.TextFilterCondition,
 	pageCondition *model.PageCondition,
@@ -33,6 +37,7 @@ func (r *queryResolver) TodoConnection(ctx context.Context,
 	/*
 	 * １ページに表示する分の絞り込み条件追加前に件数を取得
 	 */
+	// ここで取得した件数を元に、今回ページ分の情報表示後にまだ前・後のページ分の情報が存在するか否かを、後ほど判定。
 	totalCount, err := sqlboiler.Todos(mods...).Count(ctx, r.DB)
 	if err != nil {
 		log.Print(err)
@@ -42,7 +47,11 @@ func (r *queryResolver) TodoConnection(ctx context.Context,
 	/*
 	 * 並べ替え設定
 	 */
+	// 設定無し時のデフォルトは「IDの降順」とする。
 	orderKey := sqlboiler.TodoColumns.ID
+	orderDirection := model.OrderDirectionDesc.String()
+	// ↑ 並べ替え方法によって、ページングにおける検索条件が変わるため、事前に取得しておく。
+
 	if edgeOrder.ExistsOrder() {
 		// `todo` テーブルの何のカラムを並べ替えのキーにしているか
 		if edgeOrder.Key.TodoOrderKey != nil {
@@ -57,7 +66,9 @@ func (r *queryResolver) TodoConnection(ctx context.Context,
 				// inner join で取得する方式に変更すれば使用可能になるか。
 			}
 		}
-		mods = append(mods, qm.OrderBy(fmt.Sprintf("%s %s", orderKey, edgeOrder.Direction.String())))
+		orderDirection = edgeOrder.Direction.String()
+
+		mods = append(mods, qm.OrderBy(fmt.Sprintf("%s %s", orderKey, orderDirection)))
 	}
 
 	/*
@@ -80,10 +91,19 @@ func (r *queryResolver) TodoConnection(ctx context.Context,
 			if pageCondition.Backward.Last > 0 {
 				mods = append(mods, qm.Limit(pageCondition.Backward.Last))
 			}
-			// 1, 2, 3, [[4], 5, 6], 7, 8, 9
+			key, err := decodeTodoCursor(*pageCondition.Backward.Before, orderKey)
+			if err != nil {
+				log.Print(err)
+				return nil, err
+			}
 
-			// 9, 8, 7, [[6], 5, 4], 3, 2, 1
+			if orderDirection == model.OrderDirectionAsc.String() {
+				// 1, 2, 3, [[4], 5, 6], 7, 8, 9
+			}
 
+			if orderDirection == model.OrderDirectionDesc.String() {
+				// 9, 8, 7, [[6], 5, 4], 3, 2, 1
+			}
 		}
 		/*
 		 * 次ページへの遷移指示
@@ -120,7 +140,7 @@ func (r *queryResolver) TodoConnection(ctx context.Context,
 			// 単なるページングだけでなく、指定のキーで昇順・降順の並べ替えをする要件がある場合、
 			// カーソルに含める要素を「その時、並べ替えのキーに指定されている要素」にすると、
 			// 次回ページング時、カーソルをデコードした要素よりも前（ないし後）という条件指定が可能。
-			Cursor: CreateCursor("todo", todo.ID),
+			Cursor: createCursorWrap(todo, orderKey),
 		})
 	}
 	if len(edges) == 0 {
@@ -153,8 +173,37 @@ func emptyTodoConnection() *model.TodoConnection {
 	}
 }
 
-func selectCursorKey(orderKey string) {
-	// FIXME:
+func createCursorWrap(todo *sqlboiler.Todo, orderKey string) string {
+	switch orderKey {
+	case sqlboiler.TodoColumns.ID:
+		return createCursor("todo", todo.ID)
+	case sqlboiler.TodoColumns.Task:
+		return createCursor("todo", todo.Task)
+
+		// FIXME: 要件的には、ユーザのIDというよりユーザ名を並べ替えのキーとするはずだが、現状、未対応。
+		//case sqlboiler.TodoColumns.UserID:
+		//	return createCursor("todo", todo.UserID)
+	}
+	return createCursor("todo", todo.ID)
+}
+
+func decodeTodoCursor(cursor, orderKey string) (string, error) {
+	modelName, key, err := decodeCursor(cursor)
+	if err != nil {
+		return "", err
+	}
+	if modelName != "todo" {
+		return "", errors.New("not todo")
+	}
+	switch orderKey {
+	case sqlboiler.TodoColumns.ID:
+
+	case sqlboiler.TodoColumns.Task:
+
+		// FIXME: 要件的には、ユーザのIDというよりユーザ名を並べ替えのキーとするはずだが、現状、未対応。
+		//case sqlboiler.TodoColumns.UserID:
+	}
+	return key, nil
 }
 
 // todo : user = N : 1 を想定するならあえて dataloader でなくてもよいか？

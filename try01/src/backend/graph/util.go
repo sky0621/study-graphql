@@ -6,11 +6,11 @@ import (
 	"strings"
 )
 
-func CreateCursor(modelName string, key interface{}) string {
+func createCursor(modelName string, key interface{}) string {
 	return base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf("%s#####%v", modelName, key)))
 }
 
-func DecodeCursor(cursor string) (string, string, error) {
+func decodeCursor(cursor string) (string, string, error) {
 	byteArray, err := base64.RawURLEncoding.DecodeString(cursor)
 	if err != nil {
 		return "", "", err
