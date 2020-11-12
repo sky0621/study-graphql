@@ -8,3 +8,5 @@ dbname = "study-graphql-local-db"
 user   = "postgres"
 pass   = "yuckyjuice"
 sslmode= "disable"
+
+blacklist = ["migration"]
