@@ -1,5 +1,10 @@
-output   = "sqlboiler"
-pkgname  = "sqlboiler"
+output   = "boiled"
+pkgname  = "boiled"
 
-[sqlite3]
-  dbname = "data.db"
+[psql]
+host   = "localhost"
+port   = 25432
+dbname = "study-graphql-local-db"
+user   = "postgres"
+pass   = "yuckyjuice"
+sslmode= "disable"

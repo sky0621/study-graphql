@@ -1,0 +1,5 @@
+local:
+  dialect: postgres
+  datasource: host=localhost port=25432 dbname=study-graphql-local-db user=postgres password=yuckyjuice sslmode=disable
+  dir: migration
+  table: migration

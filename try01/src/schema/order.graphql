@@ -8,13 +8,18 @@ input EdgeOrder {
 
 """
 並べ替えのキー
-汎用的な構造にしたいが以下はGraphQLの仕様として不可だった。
-・enum・・・汎化機能がない。
-・interface・・・inputには実装機能がない。
-・union・・・inputでは要素に持てない。
-とはいえ、並べ替えも共通の仕組みとして提供したく、結果として機能毎に enum フィールドを列挙
+
+【検討経緯】
+汎用的な構造、かつ、タイプセーフにしたく、interface で定義の上、機能毎に input ないし enum で実装しようとした。
+しかし、input は interface を実装できない仕様だったので諦めた。
+enum に継承機能があればよかったが、それもなかった。
+union で TodoOrderKey や（増えたら）他の機能の並べ替えのキーも | でつなぐ方法も考えたが、
+union を input に要素として持たせることはできない仕様だったので、これも諦めた。
+とはいえ、並べ替えも共通の仕組みとして提供したく、結果として機能毎の enum フィールドを共通の input 内に列挙していく形にした。
 """
 input OrderKey {
+    "ユーザー一覧の並べ替えキー"
+    customerOrderKey: CustomerOrderKey
     "TODO一覧の並べ替えキー"
     todoOrderKey: TodoOrderKey
 }

@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  db:
+    restart: always
+    image: postgres:13-alpine
+    container_name: study-graphql-postgres-container
+    ports:
+      - "25432:5432"
+    environment:
+      - DATABASE_HOST=localhost
+      - POSTGRES_DB=study-graphql-local-db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=yuckyjuice
+      - PGPASSWORD=yuckyjuice
+    volumes:
+      - ./local/data:/docker-entrypoint-initdb.d/

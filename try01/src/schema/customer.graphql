@@ -1,47 +1,47 @@
 extend type Query {
   "Relay準拠ページング対応検索によるTODO一覧取得"
-  todoConnection(
+  customerConnection(
     "ページング条件"
     pageCondition: PageCondition
     "並び替え条件"
     edgeOrder: EdgeOrder
     "文字列フィルタ条件"
     filterWord: TextFilterCondition
-  ): TodoConnection
+  ): CustomerConnection
 }
 
 "ページングを伴う結果返却用"
-type TodoConnection implements Connection {
+type CustomerConnection implements Connection {
   "ページ情報"
   pageInfo: PageInfo!
   "検索結果一覧（※カーソル情報を含む）"
-  edges: [TodoEdge!]!
+  edges: [CustomerEdge!]!
   "検索結果の全件数"
   totalCount: Int!
 }
 
 "検索結果一覧（※カーソル情報を含む）"
-type TodoEdge implements Edge {
-  node: Todo
+type CustomerEdge implements Edge {
+  node: Customer
   cursor: Cursor!
 }
 
-"TODO"
-type Todo implements Node {
+"ユーザー"
+type Customer implements Node {
   "ID"
   id: ID!
-  "タスク"
-  task: String!
-  "ユーザー情報"
-  customer: Customer! @goField(forceResolver: true)
+  "名前"
+  name: String!
+  "年齢"
+  age: Int!
+  "Todo"
+  todos: [Todo!]! @goField(forceResolver: true)
 }
 
-"TODO並べ替えキー"
-enum TodoOrderKey {
+"ユーザー並べ替えキー"
+enum CustomerOrderKey {
   "ID"
   ID
-  "TODO"
-  TASK
   "ユーザー名"
-  USER_NAME
+  NAME
 }
