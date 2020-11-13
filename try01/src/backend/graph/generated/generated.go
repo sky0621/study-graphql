@@ -379,7 +379,7 @@ type PageInfo {
 "検索結果一覧（※カーソル情報を含む）"
 interface Edge {
     "Nodeインタフェースを実装したtypeなら代入可能"
-    node: Node
+    node: Node!
     cursor: Cursor!
 }`, BuiltIn: false},
 	{Name: "../schema/customer.graphql", Input: `extend type Query {
@@ -406,7 +406,7 @@ type CustomerConnection implements Connection {
 
 "検索結果一覧（※カーソル情報を含む）"
 type CustomerEdge implements Edge {
-  node: Customer
+  node: Customer!
   cursor: Cursor!
 }
 
@@ -476,7 +476,7 @@ input PageCondition {
     "現在ページ番号（今回のページング実行前の時点のもの）"
     nowPageNo: Int!
     "１ページ表示件数"
-    initialLimit: Int
+    initialLimit: Int!
 }
 
 "前ページ遷移条件"
@@ -484,7 +484,7 @@ input BackwardPagination {
     "取得件数"
     last: Int!
     "取得対象識別用カーソル（※前ページ遷移時にこのカーソルよりも前にあるレコードが取得対象）"
-    before: Cursor
+    before: Cursor!
 }
 
 "次ページ遷移条件"
@@ -492,7 +492,7 @@ input ForwardPagination {
     "取得件数"
     first: Int!
     "取得対象識別用カーソル（※次ページ遷移時にこのカーソルよりも後ろにあるレコードが取得対象）"
-    after: Cursor
+    after: Cursor!
 }
 `, BuiltIn: false},
 	{Name: "../schema/schema.graphql", Input: `# Global Object Identification ... 全データを共通のIDでユニーク化
@@ -515,8 +515,8 @@ directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITI
 input TextFilterCondition {
     "フィルタ文字列"
     filterWord: String!
-    "マッチングパターン（※オプション。指定無しの場合は「部分一致」となる。）"
-    matchingPattern: MatchingPattern = PARTIAL_MATCH
+    "マッチングパターン"
+    matchingPattern: MatchingPattern!
 }
 
 "マッチングパターン種別（※要件次第で「前方一致」や「後方一致」も追加）"
@@ -551,7 +551,7 @@ type TodoConnection implements Connection {
 
 "検索結果一覧（※カーソル情報を含む）"
 type TodoEdge implements Edge {
-  node: Todo
+  node: Todo!
   cursor: Cursor!
 }
 
@@ -986,11 +986,14 @@ func (ec *executionContext) _CustomerEdge_node(ctx context.Context, field graphq
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.Customer)
 	fc.Result = res
-	return ec.marshalOCustomer2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐCustomer(ctx, field.Selections, res)
+	return ec.marshalNCustomer2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐCustomer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CustomerEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.CustomerEdge) (ret graphql.Marshaler) {
@@ -1591,11 +1594,14 @@ func (ec *executionContext) _TodoEdge_node(ctx context.Context, field graphql.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.Todo)
 	fc.Result = res
-	return ec.marshalOTodo2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodo(ctx, field.Selections, res)
+	return ec.marshalNTodo2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodo(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TodoEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.TodoEdge) (ret graphql.Marshaler) {
@@ -2738,7 +2744,7 @@ func (ec *executionContext) unmarshalInputBackwardPagination(ctx context.Context
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
-			it.Before, err = ec.unmarshalOCursor2ᚖstring(ctx, v)
+			it.Before, err = ec.unmarshalNCursor2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2794,7 +2800,7 @@ func (ec *executionContext) unmarshalInputForwardPagination(ctx context.Context,
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
-			it.After, err = ec.unmarshalOCursor2ᚖstring(ctx, v)
+			it.After, err = ec.unmarshalNCursor2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2866,7 +2872,7 @@ func (ec *executionContext) unmarshalInputPageCondition(ctx context.Context, obj
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("initialLimit"))
-			it.InitialLimit, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			it.InitialLimit, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2879,10 +2885,6 @@ func (ec *executionContext) unmarshalInputPageCondition(ctx context.Context, obj
 func (ec *executionContext) unmarshalInputTextFilterCondition(ctx context.Context, obj interface{}) (model.TextFilterCondition, error) {
 	var it model.TextFilterCondition
 	var asMap = obj.(map[string]interface{})
-
-	if _, present := asMap["matchingPattern"]; !present {
-		asMap["matchingPattern"] = "PARTIAL_MATCH"
-	}
 
 	for k, v := range asMap {
 		switch k {
@@ -2898,7 +2900,7 @@ func (ec *executionContext) unmarshalInputTextFilterCondition(ctx context.Contex
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matchingPattern"))
-			it.MatchingPattern, err = ec.unmarshalOMatchingPattern2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐMatchingPattern(ctx, v)
+			it.MatchingPattern, err = ec.unmarshalNMatchingPattern2githubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐMatchingPattern(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3086,6 +3088,9 @@ func (ec *executionContext) _CustomerEdge(ctx context.Context, sel ast.Selection
 			out.Values[i] = graphql.MarshalString("CustomerEdge")
 		case "node":
 			out.Values[i] = ec._CustomerEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "cursor":
 			out.Values[i] = ec._CustomerEdge_cursor(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3303,6 +3308,9 @@ func (ec *executionContext) _TodoEdge(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = graphql.MarshalString("TodoEdge")
 		case "node":
 			out.Values[i] = ec._TodoEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "cursor":
 			out.Values[i] = ec._TodoEdge_cursor(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3683,6 +3691,16 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNMatchingPattern2githubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐMatchingPattern(ctx context.Context, v interface{}) (model.MatchingPattern, error) {
+	var res model.MatchingPattern
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNMatchingPattern2githubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐMatchingPattern(ctx context.Context, sel ast.SelectionSet, v model.MatchingPattern) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNOrderDirection2githubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐOrderDirection(ctx context.Context, v interface{}) (model.OrderDirection, error) {
@@ -4080,28 +4098,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return graphql.MarshalBoolean(*v)
 }
 
-func (ec *executionContext) unmarshalOCursor2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalString(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOCursor2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return graphql.MarshalString(*v)
-}
-
-func (ec *executionContext) marshalOCustomer2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐCustomer(ctx context.Context, sel ast.SelectionSet, v *model.Customer) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Customer(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalOCustomerConnection2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐCustomerConnection(ctx context.Context, sel ast.SelectionSet, v *model.CustomerConnection) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -4139,37 +4135,6 @@ func (ec *executionContext) unmarshalOForwardPagination2ᚖgithubᚗcomᚋsky062
 	}
 	res, err := ec.unmarshalInputForwardPagination(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalInt(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return graphql.MarshalInt(*v)
-}
-
-func (ec *executionContext) unmarshalOMatchingPattern2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐMatchingPattern(ctx context.Context, v interface{}) (*model.MatchingPattern, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var res = new(model.MatchingPattern)
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOMatchingPattern2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐMatchingPattern(ctx context.Context, sel ast.SelectionSet, v *model.MatchingPattern) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return v
 }
 
 func (ec *executionContext) marshalONode2githubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐNode(ctx context.Context, sel ast.SelectionSet, v model.Node) graphql.Marshaler {
@@ -4217,13 +4182,6 @@ func (ec *executionContext) unmarshalOTextFilterCondition2ᚖgithubᚗcomᚋsky0
 	}
 	res, err := ec.unmarshalInputTextFilterCondition(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOTodo2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodo(ctx context.Context, sel ast.SelectionSet, v *model.Todo) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Todo(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOTodoConnection2ᚖgithubᚗcomᚋsky0621ᚋstudyᚑgraphqlᚋtry01ᚋsrcᚋbackendᚋgraphᚋmodelᚐTodoConnection(ctx context.Context, sel ast.SelectionSet, v *model.TodoConnection) graphql.Marshaler {

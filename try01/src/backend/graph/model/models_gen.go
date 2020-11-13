@@ -27,7 +27,7 @@ type BackwardPagination struct {
 	// 取得件数
 	Last int `json:"last"`
 	// 取得対象識別用カーソル（※前ページ遷移時にこのカーソルよりも前にあるレコードが取得対象）
-	Before *string `json:"before"`
+	Before string `json:"before"`
 }
 
 // ユーザー
@@ -77,7 +77,7 @@ type ForwardPagination struct {
 	// 取得件数
 	First int `json:"first"`
 	// 取得対象識別用カーソル（※次ページ遷移時にこのカーソルよりも後ろにあるレコードが取得対象）
-	After *string `json:"after"`
+	After string `json:"after"`
 }
 
 // 並べ替えのキー
@@ -105,7 +105,7 @@ type PageCondition struct {
 	// 現在ページ番号（今回のページング実行前の時点のもの）
 	NowPageNo int `json:"nowPageNo"`
 	// １ページ表示件数
-	InitialLimit *int `json:"initialLimit"`
+	InitialLimit int `json:"initialLimit"`
 }
 
 // ページ情報
@@ -124,8 +124,8 @@ type PageInfo struct {
 type TextFilterCondition struct {
 	// フィルタ文字列
 	FilterWord string `json:"filterWord"`
-	// マッチングパターン（※オプション。指定無しの場合は「部分一致」となる。）
-	MatchingPattern *MatchingPattern `json:"matchingPattern"`
+	// マッチングパターン
+	MatchingPattern MatchingPattern `json:"matchingPattern"`
 }
 
 // TODO

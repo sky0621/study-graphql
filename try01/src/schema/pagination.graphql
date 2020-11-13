@@ -10,7 +10,7 @@ input PageCondition {
     "現在ページ番号（今回のページング実行前の時点のもの）"
     nowPageNo: Int!
     "１ページ表示件数"
-    initialLimit: Int
+    initialLimit: Int!
 }
 
 "前ページ遷移条件"
@@ -18,7 +18,7 @@ input BackwardPagination {
     "取得件数"
     last: Int!
     "取得対象識別用カーソル（※前ページ遷移時にこのカーソルよりも前にあるレコードが取得対象）"
-    before: Cursor
+    before: Cursor!
 }
 
 "次ページ遷移条件"
@@ -26,5 +26,5 @@ input ForwardPagination {
     "取得件数"
     first: Int!
     "取得対象識別用カーソル（※次ページ遷移時にこのカーソルよりも後ろにあるレコードが取得対象）"
-    after: Cursor
+    after: Cursor!
 }

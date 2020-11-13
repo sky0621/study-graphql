@@ -36,12 +36,12 @@ const (
 // TODO: とりあえず雑に作ったが、少なくとも JOIN には対応したい。どこまで汎用性を持たせるかは要件次第。
 func buildSearchQueryMod(p searchParam) qm.QueryMod {
 	q := `
-		SELECT rownum, * FROM (
-			SELECT ROW_NUMBER() OVER (ORDER BY %s %s) AS rownum, *
+		SELECT row_num, * FROM (
+			SELECT ROW_NUMBER() OVER (ORDER BY %s %s) AS row_num, *
 			FROM %s
 		) AS tmp
 		WHERE %s
-		AND rownum %s %d
+		AND row_num %s %d
 		LIMIT %d
 	`
 	sql := fmt.Sprintf(q,

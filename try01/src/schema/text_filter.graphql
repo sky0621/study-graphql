@@ -2,8 +2,8 @@
 input TextFilterCondition {
     "フィルタ文字列"
     filterWord: String!
-    "マッチングパターン（※オプション。指定無しの場合は「部分一致」となる。）"
-    matchingPattern: MatchingPattern = PARTIAL_MATCH
+    "マッチングパターン"
+    matchingPattern: MatchingPattern!
 }
 
 "マッチングパターン種別（※要件次第で「前方一致」や「後方一致」も追加）"

@@ -23,6 +23,6 @@ type PageInfo {
 "検索結果一覧（※カーソル情報を含む）"
 interface Edge {
     "Nodeインタフェースを実装したtypeなら代入可能"
-    node: Node
+    node: Node!
     cursor: Cursor!
 }
