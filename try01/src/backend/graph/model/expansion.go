@@ -16,11 +16,25 @@ func (c *TextFilterCondition) MatchString() string {
 	return matchStr
 }
 
+func (c *PageCondition) IsInitialPageView() bool {
+	if c == nil {
+		return true
+	}
+	return c.Backward == nil && c.Forward == nil
+}
+
+func (c *PageCondition) HasInitialLimit() bool {
+	if c == nil {
+		return false
+	}
+	return c.InitialLimit > 0
+}
+
 func (c *PageCondition) TotalPage(totalCount int64) int64 {
 	if c == nil {
 		return 0
 	}
-	targetCount := 0
+	var targetCount int64 = 0
 	if c.Backward == nil && c.Forward == nil {
 		targetCount = c.InitialLimit
 	} else {
@@ -34,7 +48,7 @@ func (c *PageCondition) TotalPage(totalCount int64) int64 {
 	return int64(math.Ceil(float64(totalCount) / float64(targetCount)))
 }
 
-func (c *PageCondition) MoveToPageNo() int {
+func (c *PageCondition) MoveToPageNo() int64 {
 	if c == nil {
 		return 1 // 想定外のため初期ページ
 	}

@@ -28,6 +28,12 @@ const (
 
 // TODO: とりあえず雑に作った。複数テーブルへの対応等、どこまで汎用性を持たせるかは要件次第。
 func buildSearchQueryMod(p searchParam) qm.QueryMod {
+	if p.baseCondition == "" {
+		p.baseCondition = "true"
+	}
+	if p.limit == 0 {
+		p.limit = 1000 // 表示件数指定無しの場合でもパフォーマンス観点からMax件数は指定
+	}
 	q := `
 		SELECT row_num, * FROM (
 			SELECT ROW_NUMBER() OVER (ORDER BY %s %s) AS row_num, *

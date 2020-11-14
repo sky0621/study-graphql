@@ -28,15 +28,51 @@ func (r *queryResolver) CustomerConnection(ctx context.Context, pageCondition *m
 		// 情報取得先のテーブル名
 		tableName: boiled.TableNames.Customer,
 
-		// 検索文字列フィルタ未指定時のデフォルト（※とりあえずSQL文を固定化しているのでダミー条件を指定）
-		baseCondition: "true",
-
 		// 並び順のデフォルトはIDの降順
 		orderKey:       boiled.CustomerColumns.ID,
 		orderDirection: model.OrderDirectionDesc.String(),
+	}
 
-		// 表示件数指定無しの場合でもパフォーマンス観点からMax件数は指定
-		limit: 1000,
+	/*
+	 * 検索文字列フィルタ設定
+	 * TODO: 複数カラムにフィルタを適用したい場合など、ここで AND でつなぐか buildSearchQueryMod() を拡張するか検討が必要
+	 */
+	if filterWord != nil {
+		params.baseCondition = fmt.Sprintf("%s LIKE '%s'", boiled.CustomerColumns.Name, filterWord.MatchString())
+	}
+
+	/*
+	 * ページング設定
+	 */
+	if pageCondition.IsInitialPageView() {
+		/*
+		 * ページング指定無しの初期ページビュー
+		 */
+		// 表示件数が指定されている場合
+		if pageCondition.HasInitialLimit() {
+			params.limit = pageCondition.InitialLimit
+		}
+	} else {
+		// FIXME:
+	}
+	params.compareSymbol = compareSymbolGt
+	params.decodedCursor = 0
+
+	/*
+	 * 並び順の指定
+	 */
+	if edgeOrder.CustomerOrderKeyExists() {
+		params.orderKey = edgeOrder.Key.CustomerOrderKey.String()
+		params.orderDirection = edgeOrder.Direction.String()
+	}
+
+	/*
+	 * 検索実行
+	 */
+	var records []*CustomerWithRowNum
+	if err := boiled.Customers(buildSearchQueryMod(params)).Bind(ctx, r.DB, &records); err != nil {
+		log.Print(err)
+		return nil, err
 	}
 
 	/*
@@ -49,35 +85,13 @@ func (r *queryResolver) CustomerConnection(ctx context.Context, pageCondition *m
 		if filterWord == nil {
 			totalCount, err = boiled.Customers().Count(ctx, r.DB)
 		} else {
-			predicate := filterWord.MatchString()
-			totalCount, err = boiled.Customers(qm.Where(boiled.CustomerColumns.Name+" LIKE ?", predicate)).Count(ctx, r.DB)
-			/*
-			 * 検索文字列フィルタをSQLに適用
-			 * TODO: 複数カラムにフィルタを適用したい場合など、ここで AND でつなぐか buildSearchQueryMod() を拡張するか検討が必要
-			 */
-			params.baseCondition = fmt.Sprintf("%s LIKE '%s'", boiled.CustomerColumns.Name, predicate)
+			totalCount, err = boiled.Customers(qm.Where(boiled.CustomerColumns.Name+" LIKE ?",
+				filterWord.MatchString())).Count(ctx, r.DB)
 		}
 		if err != nil {
 			log.Print(err)
 			return nil, err
 		}
-	}
-
-	if edgeOrder.CustomerOrderKeyExists() {
-		params.orderKey = edgeOrder.Key.CustomerOrderKey.String()
-		params.orderDirection = edgeOrder.Direction.String()
-	}
-
-	params.compareSymbol = compareSymbolGt
-	params.decodedCursor = 0
-
-	/*
-	 * 検索実行
-	 */
-	var records []*CustomerWithRowNum
-	if err := boiled.Customers(buildSearchQueryMod(params)).Bind(ctx, r.DB, &records); err != nil {
-		log.Print(err)
-		return nil, err
 	}
 
 	/*
@@ -110,8 +124,8 @@ func (r *queryResolver) CustomerConnection(ctx context.Context, pageCondition *m
 	 * クライアント側での画面表示及び次回ページングに必要な情報
 	 */
 	pageInfo := &model.PageInfo{
-		HasNextPage:     (totalPage - int64(pageCondition.MoveToPageNo())) >= 1, // 遷移後も、まだ先のページがあるか
-		HasPreviousPage: pageCondition.MoveToPageNo() > 1,                       // 遷移後も、まだ前のページがあるか
+		HasNextPage:     (totalPage - pageCondition.MoveToPageNo()) >= 1, // 遷移後も、まだ先のページがあるか
+		HasPreviousPage: pageCondition.MoveToPageNo() > 1,                // 遷移後も、まだ前のページがあるか
 	}
 	if len(edges) > 0 {
 		pageInfo.StartCursor = edges[0].Cursor

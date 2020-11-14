@@ -25,7 +25,7 @@ type Node interface {
 // 前ページ遷移条件
 type BackwardPagination struct {
 	// 取得件数
-	Last int `json:"last"`
+	Last int64 `json:"last"`
 	// 取得対象識別用カーソル（※前ページ遷移時にこのカーソルよりも前にあるレコードが取得対象）
 	Before string `json:"before"`
 }
@@ -75,7 +75,7 @@ type EdgeOrder struct {
 // 次ページ遷移条件
 type ForwardPagination struct {
 	// 取得件数
-	First int `json:"first"`
+	First int64 `json:"first"`
 	// 取得対象識別用カーソル（※次ページ遷移時にこのカーソルよりも後ろにあるレコードが取得対象）
 	After string `json:"after"`
 }
@@ -103,9 +103,9 @@ type PageCondition struct {
 	// 次ページ遷移条件
 	Forward *ForwardPagination `json:"forward"`
 	// 現在ページ番号（今回のページング実行前の時点のもの）
-	NowPageNo int `json:"nowPageNo"`
+	NowPageNo int64 `json:"nowPageNo"`
 	// １ページ表示件数
-	InitialLimit int `json:"initialLimit"`
+	InitialLimit int64 `json:"initialLimit"`
 }
 
 // ページ情報
@@ -168,16 +168,19 @@ const (
 	CustomerOrderKeyID CustomerOrderKey = "ID"
 	// ユーザー名
 	CustomerOrderKeyName CustomerOrderKey = "NAME"
+	// 年齢
+	CustomerOrderKeyAge CustomerOrderKey = "AGE"
 )
 
 var AllCustomerOrderKey = []CustomerOrderKey{
 	CustomerOrderKeyID,
 	CustomerOrderKeyName,
+	CustomerOrderKeyAge,
 }
 
 func (e CustomerOrderKey) IsValid() bool {
 	switch e {
-	case CustomerOrderKeyID, CustomerOrderKeyName:
+	case CustomerOrderKeyID, CustomerOrderKeyName, CustomerOrderKeyAge:
 		return true
 	}
 	return false

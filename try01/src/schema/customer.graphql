@@ -44,4 +44,6 @@ enum CustomerOrderKey {
   ID
   "ユーザー名"
   NAME
+  "年齢"
+  AGE
 }

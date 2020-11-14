@@ -430,6 +430,8 @@ enum CustomerOrderKey {
   ID
   "ユーザー名"
   NAME
+  "年齢"
+  AGE
 }
 `, BuiltIn: false},
 	{Name: "../schema/order.graphql", Input: `"並び替え条件"
@@ -476,15 +478,15 @@ input PageCondition {
     "次ページ遷移条件"
     forward: ForwardPagination
     "現在ページ番号（今回のページング実行前の時点のもの）"
-    nowPageNo: Int!
+    nowPageNo: Int64!
     "１ページ表示件数"
-    initialLimit: Int!
+    initialLimit: Int64!
 }
 
 "前ページ遷移条件"
 input BackwardPagination {
     "取得件数"
-    last: Int!
+    last: Int64!
     "取得対象識別用カーソル（※前ページ遷移時にこのカーソルよりも前にあるレコードが取得対象）"
     before: Cursor!
 }
@@ -492,7 +494,7 @@ input BackwardPagination {
 "次ページ遷移条件"
 input ForwardPagination {
     "取得件数"
-    first: Int!
+    first: Int64!
     "取得対象識別用カーソル（※次ページ遷移時にこのカーソルよりも後ろにあるレコードが取得対象）"
     after: Cursor!
 }
@@ -2738,7 +2740,7 @@ func (ec *executionContext) unmarshalInputBackwardPagination(ctx context.Context
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
-			it.Last, err = ec.unmarshalNInt2int(ctx, v)
+			it.Last, err = ec.unmarshalNInt642int64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2794,7 +2796,7 @@ func (ec *executionContext) unmarshalInputForwardPagination(ctx context.Context,
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
-			it.First, err = ec.unmarshalNInt2int(ctx, v)
+			it.First, err = ec.unmarshalNInt642int64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2866,7 +2868,7 @@ func (ec *executionContext) unmarshalInputPageCondition(ctx context.Context, obj
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nowPageNo"))
-			it.NowPageNo, err = ec.unmarshalNInt2int(ctx, v)
+			it.NowPageNo, err = ec.unmarshalNInt642int64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2874,7 +2876,7 @@ func (ec *executionContext) unmarshalInputPageCondition(ctx context.Context, obj
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("initialLimit"))
-			it.InitialLimit, err = ec.unmarshalNInt2int(ctx, v)
+			it.InitialLimit, err = ec.unmarshalNInt642int64(ctx, v)
 			if err != nil {
 				return it, err
 			}
