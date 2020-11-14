@@ -8,20 +8,13 @@ import (
 
 type searchParam struct {
 	orderKey       string
-	orderDirection orderDirection
+	orderDirection string
 	tableName      string
 	baseCondition  string
 	compareSymbol  compareSymbol
 	decodedCursor  int64
 	limit          int64
 }
-
-type orderDirection string
-
-const (
-	orderDirectionAsc  orderDirection = "ASC"
-	orderDirectionDesc orderDirection = "DESC"
-)
 
 type compareSymbol string
 
@@ -33,15 +26,15 @@ const (
 	compareSymbolEq compareSymbol = "="
 )
 
-// TODO: とりあえず雑に作ったが、少なくとも JOIN には対応したい。どこまで汎用性を持たせるかは要件次第。
+// TODO: とりあえず雑に作った。複数テーブルへの対応等、どこまで汎用性を持たせるかは要件次第。
 func buildSearchQueryMod(p searchParam) qm.QueryMod {
 	q := `
 		SELECT row_num, * FROM (
 			SELECT ROW_NUMBER() OVER (ORDER BY %s %s) AS row_num, *
 			FROM %s
+			WHERE %s
 		) AS tmp
-		WHERE %s
-		AND row_num %s %d
+		WHERE row_num %s %d
 		LIMIT %d
 	`
 	sql := fmt.Sprintf(q,

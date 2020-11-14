@@ -51,7 +51,7 @@ type CustomerConnection struct {
 	// 検索結果一覧（※カーソル情報を含む）
 	Edges []*CustomerEdge `json:"edges"`
 	// 検索結果の全件数
-	TotalCount int `json:"totalCount"`
+	TotalCount int64 `json:"totalCount"`
 }
 
 func (CustomerConnection) IsConnection() {}
@@ -147,7 +147,7 @@ type TodoConnection struct {
 	// 検索結果一覧（※カーソル情報を含む）
 	Edges []*TodoEdge `json:"edges"`
 	// 検索結果の全件数
-	TotalCount int `json:"totalCount"`
+	TotalCount int64 `json:"totalCount"`
 }
 
 func (TodoConnection) IsConnection() {}

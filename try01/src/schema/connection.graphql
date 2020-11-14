@@ -1,3 +1,5 @@
+scalar Int64
+
 "ページングを伴う結果返却用"
 interface Connection {
     "ページ情報"
@@ -5,7 +7,7 @@ interface Connection {
     "結果一覧（※カーソル情報を含む）"
     edges: [Edge!]!
     "検索結果の全件数"
-    totalCount: Int!
+    totalCount: Int64!
 }
 
 "ページ情報"

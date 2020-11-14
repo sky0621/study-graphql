@@ -17,7 +17,7 @@ type CustomerConnection implements Connection {
   "検索結果一覧（※カーソル情報を含む）"
   edges: [CustomerEdge!]!
   "検索結果の全件数"
-  totalCount: Int!
+  totalCount: Int64!
 }
 
 "検索結果一覧（※カーソル情報を含む）"

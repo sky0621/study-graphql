@@ -354,14 +354,16 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "../schema/connection.graphql", Input: `"ページングを伴う結果返却用"
+	{Name: "../schema/connection.graphql", Input: `scalar Int64
+
+"ページングを伴う結果返却用"
 interface Connection {
     "ページ情報"
     pageInfo: PageInfo!
     "結果一覧（※カーソル情報を含む）"
     edges: [Edge!]!
     "検索結果の全件数"
-    totalCount: Int!
+    totalCount: Int64!
 }
 
 "ページ情報"
@@ -401,7 +403,7 @@ type CustomerConnection implements Connection {
   "検索結果一覧（※カーソル情報を含む）"
   edges: [CustomerEdge!]!
   "検索結果の全件数"
-  totalCount: Int!
+  totalCount: Int64!
 }
 
 "検索結果一覧（※カーソル情報を含む）"
@@ -546,7 +548,7 @@ type TodoConnection implements Connection {
   "検索結果一覧（※カーソル情報を含む）"
   edges: [TodoEdge!]!
   "検索結果の全件数"
-  totalCount: Int!
+  totalCount: Int64!
 }
 
 "検索結果一覧（※カーソル情報を含む）"
@@ -956,9 +958,9 @@ func (ec *executionContext) _CustomerConnection_totalCount(ctx context.Context, 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CustomerEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.CustomerEdge) (ret graphql.Marshaler) {
@@ -1564,9 +1566,9 @@ func (ec *executionContext) _TodoConnection_totalCount(ctx context.Context, fiel
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TodoEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.TodoEdge) (ret graphql.Marshaler) {
@@ -3685,6 +3687,21 @@ func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}
 
 func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
 	res := graphql.MarshalInt(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNInt642int64(ctx context.Context, v interface{}) (int64, error) {
+	res, err := graphql.UnmarshalInt64(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt642int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
+	res := graphql.MarshalInt64(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
