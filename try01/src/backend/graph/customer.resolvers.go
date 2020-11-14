@@ -42,6 +42,14 @@ func (r *queryResolver) CustomerConnection(ctx context.Context, pageCondition *m
 	}
 
 	/*
+	 * 並び順の指定
+	 */
+	if edgeOrder.CustomerOrderKeyExists() {
+		params.orderKey = edgeOrder.Key.CustomerOrderKey.String()
+		params.orderDirection = edgeOrder.Direction.String()
+	}
+
+	/*
 	 * ページング設定
 	 */
 	if pageCondition.IsInitialPageView() {
@@ -50,20 +58,75 @@ func (r *queryResolver) CustomerConnection(ctx context.Context, pageCondition *m
 		 */
 		// 表示件数が指定されている場合
 		if pageCondition.HasInitialLimit() {
-			params.limit = pageCondition.InitialLimit
+			params.rowNumFrom = 1
+			params.rowNumTo = pageCondition.InitialLimit
 		}
 	} else {
-		// FIXME:
-	}
-	params.compareSymbol = compareSymbolGt
-	params.decodedCursor = 0
+		cursor := ""
+		var limit int64 = 0
+		if params.orderDirection == model.OrderDirectionAsc.String() {
+			// 1, 2, 3, 4, 5, [6, 7, 8, 9, 10], 11, 12, 13, 14, 15, ...
 
-	/*
-	 * 並び順の指定
-	 */
-	if edgeOrder.CustomerOrderKeyExists() {
-		params.orderKey = edgeOrder.Key.CustomerOrderKey.String()
-		params.orderDirection = edgeOrder.Direction.String()
+			// 前ページへの遷移指示
+			if pageCondition.Backward != nil {
+				cursor = pageCondition.Backward.Before
+				limit = pageCondition.Backward.Last
+
+				key, err := decodeCustomerCursor(cursor)
+				if err != nil {
+					log.Print(err)
+					return nil, err
+				}
+				params.rowNumFrom = key - limit
+				params.rowNumTo = key - 1
+			}
+			// 次ページへの遷移指示
+			if pageCondition.Forward != nil {
+				cursor = pageCondition.Forward.After
+				limit = pageCondition.Forward.First
+
+				key, err := decodeCustomerCursor(cursor)
+				if err != nil {
+					log.Print(err)
+					return nil, err
+				}
+				params.rowNumFrom = key + 1
+				params.rowNumTo = key + limit
+			}
+		} else {
+			// 15, 14, 13, 12, 11, [10, 9, 8, 7, 6], 5, 4, 3, 2, 1
+
+			// 前ページへの遷移指示
+			if pageCondition.Backward != nil {
+				cursor = pageCondition.Backward.Before
+				limit = pageCondition.Backward.Last
+
+				key, err := decodeCustomerCursor(cursor)
+				if err != nil {
+					log.Print(err)
+					return nil, err
+				}
+				params.rowNumFrom = key - limit
+				params.rowNumTo = key - 1
+				//params.rowNumFrom = key + limit
+				//params.rowNumTo = key + 1
+			}
+			// 次ページへの遷移指示
+			if pageCondition.Forward != nil {
+				cursor = pageCondition.Forward.After
+				limit = pageCondition.Forward.First
+
+				key, err := decodeCustomerCursor(cursor)
+				if err != nil {
+					log.Print(err)
+					return nil, err
+				}
+				params.rowNumFrom = key + 1
+				params.rowNumTo = key + limit
+				//params.rowNumFrom = key - 1
+				//params.rowNumTo = key - limit
+			}
+		}
 	}
 
 	/*

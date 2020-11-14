@@ -11,28 +11,14 @@ type searchParam struct {
 	orderDirection string
 	tableName      string
 	baseCondition  string
-	compareSymbol  compareSymbol
-	decodedCursor  int64
-	limit          int64
+	rowNumFrom     int64
+	rowNumTo       int64
 }
-
-type compareSymbol string
-
-const (
-	compareSymbolGt compareSymbol = ">"
-	compareSymbolGe compareSymbol = ">="
-	compareSymbolLt compareSymbol = "<"
-	compareSymbolLe compareSymbol = "<="
-	compareSymbolEq compareSymbol = "="
-)
 
 // TODO: とりあえず雑に作った。複数テーブルへの対応等、どこまで汎用性を持たせるかは要件次第。
 func buildSearchQueryMod(p searchParam) qm.QueryMod {
 	if p.baseCondition == "" {
 		p.baseCondition = "true"
-	}
-	if p.limit == 0 {
-		p.limit = 1000 // 表示件数指定無しの場合でもパフォーマンス観点からMax件数は指定
 	}
 	q := `
 		SELECT row_num, * FROM (
@@ -40,14 +26,13 @@ func buildSearchQueryMod(p searchParam) qm.QueryMod {
 			FROM %s
 			WHERE %s
 		) AS tmp
-		WHERE row_num %s %d
-		LIMIT %d
+		WHERE row_num BETWEEN %d AND %d
 	`
 	sql := fmt.Sprintf(q,
 		p.orderKey, p.orderDirection,
 		p.tableName,
-		p.baseCondition, p.compareSymbol, p.decodedCursor,
-		p.limit,
+		p.baseCondition,
+		p.rowNumFrom, p.rowNumTo,
 	)
 	return qm.SQL(sql)
 }

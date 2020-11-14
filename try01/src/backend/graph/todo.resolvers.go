@@ -12,10 +12,12 @@ import (
 )
 
 func (r *queryResolver) TodoConnection(ctx context.Context, pageCondition *model.PageCondition, edgeOrder *model.EdgeOrder, filterWord *model.TextFilterCondition) (*model.TodoConnection, error) {
+	// FIXME:
 	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *todoResolver) Customer(ctx context.Context, obj *model.Todo) (*model.Customer, error) {
+	// FIXME:
 	panic(fmt.Errorf("not implemented"))
 }
 
