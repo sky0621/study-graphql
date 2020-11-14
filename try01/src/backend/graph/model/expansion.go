@@ -23,13 +23,6 @@ func (c *PageCondition) IsInitialPageView() bool {
 	return c.Backward == nil && c.Forward == nil
 }
 
-func (c *PageCondition) HasInitialLimit() bool {
-	if c == nil {
-		return false
-	}
-	return c.InitialLimit > 0
-}
-
 func (c *PageCondition) TotalPage(totalCount int64) int64 {
 	if c == nil {
 		return 0
