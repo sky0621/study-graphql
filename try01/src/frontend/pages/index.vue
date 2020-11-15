@@ -1,12 +1,12 @@
 <template>
-  <TodoPaging />
+  <CustomerPaging />
 </template>
 
 <script lang="ts">
 import { Vue, Component } from 'nuxt-property-decorator'
-import TodoPaging from '~/components/TodoPaging.vue'
+import CustomerPaging from '~/components/CustomerPaging.vue'
 @Component({
-  components: { TodoPaging }
+  components: { CustomerPaging }
 })
 export default class IndexPage extends Vue {}
 </script>

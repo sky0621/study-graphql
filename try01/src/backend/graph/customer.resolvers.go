@@ -37,8 +37,9 @@ func (r *queryResolver) CustomerConnection(ctx context.Context, pageCondition *m
 	 * 検索文字列フィルタ設定
 	 * TODO: 複数カラムにフィルタを適用したい場合など、ここで AND でつなぐか buildSearchQueryMod() を拡張するか検討が必要
 	 */
-	if filterWord != nil {
-		params.baseCondition = fmt.Sprintf("%s LIKE '%s'", boiled.CustomerColumns.Name, filterWord.MatchString())
+	filter := filterWord.MatchString()
+	if filter != "" {
+		params.baseCondition = fmt.Sprintf("%s LIKE '%s'", boiled.CustomerColumns.Name, filter)
 	}
 
 	/*
@@ -95,7 +96,7 @@ func (r *queryResolver) CustomerConnection(ctx context.Context, pageCondition *m
 	var totalCount int64 = 0
 	{
 		var err error
-		if filterWord == nil {
+		if filter == "" {
 			totalCount, err = boiled.Customers().Count(ctx, r.DB)
 		} else {
 			totalCount, err = boiled.Customers(qm.Where(boiled.CustomerColumns.Name+" LIKE ?",

@@ -1,12 +1,12 @@
 query customerConnection(
-  $filterWord: TextFilterCondition
   $pageCondition: PageCondition
   $edgeOrder: EdgeOrder
+  $filterWord: TextFilterCondition
 ) {
   customerConnection(
-    filterWord: $filterWord
     pageCondition: $pageCondition
     edgeOrder: $edgeOrder
+    filterWord: $filterWord
   ) {
     pageInfo {
       hasNextPage

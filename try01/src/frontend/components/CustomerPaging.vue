@@ -2,7 +2,7 @@
   <v-container>
     <!-- 「文字列フィルタ」テキストボックス表示エリア -->
     <v-row>
-      <v-col col="5">
+      <v-col col="2">
         <v-card class="pa-4">
           <v-text-field v-model="search" label="Search"></v-text-field>
         </v-card>
@@ -10,7 +10,7 @@
     </v-row>
     <!-- ページング込みの一覧テーブル表示エリア -->
     <v-row>
-      <v-col col="9">
+      <v-col col="4">
         <v-card>
           <v-data-table
             :search="search"
@@ -29,10 +29,16 @@
 <script lang="ts">
 import { Component, Vue, Watch } from '~/node_modules/nuxt-property-decorator'
 // eslint-disable-next-line no-unused-vars
-import { DataTableHeader } from '~/types/vuetify'
 import customerConnection from '~/apollo/queries/customerConnection.gql'
 // eslint-disable-next-line no-unused-vars
 import { Edge, EdgeOrder, PageCondition } from '~/gql-types'
+
+interface DataTableHeader {
+  text: string
+  value: string
+  sortable: boolean
+  width?: number
+}
 
 // v-data-tableにおけるヘッダーの定義用
 class DataTableHeaderImpl implements DataTableHeader {
@@ -51,21 +57,21 @@ class DataTableHeaderImpl implements DataTableHeader {
 // v-data-tableにおけるページング・ソート条件値の受け取り用
 class DataTableOptions {
   public page: number = 1
-  public itemsPerPage: number = 10
+  public itemsPerPage: number = 5
   // MEMO: 現状では一度に指定できるソートキーは１つ
   public sortBy: Array<string> = []
   public sortDesc: Array<boolean> = []
 }
 
 @Component({})
-export default class TodoPaging extends Vue {
+export default class CustomerPaging extends Vue {
   // 文字列フィルタ入力値の受け口
   private readonly search = ''
 
   // 一覧テーブルのヘッダー表示要素の配列
   private readonly headers: DataTableHeader[] = [
-    new DataTableHeaderImpl('ID', 'id', false, 50),
-    new DataTableHeaderImpl('Name', 'name', true, 50),
+    new DataTableHeaderImpl('ID', 'id', true, 50),
+    new DataTableHeaderImpl('Name', 'name', true, 100),
     new DataTableHeaderImpl('Age', 'age', true, 50)
   ]
 
@@ -80,10 +86,10 @@ export default class TodoPaging extends Vue {
   private totalCount: number = 0
 
   // 今回のページの１番目のレコードを表す識別子
-  private startCursor: string | null = null
+  private startCursor: string = ""
 
   // 今回のページの最後のレコードを表す識別子
-  private endCursor: string | null = null
+  private endCursor: string = ""
 
   // 現在のページを表す（これも、GraphQLサーバに渡すパラメータとして必要）
   private nowPage: number = 1
@@ -119,7 +125,10 @@ export default class TodoPaging extends Vue {
         query: customerConnection,
         variables: {
           // 文字列フィルタ条件
-          filterWord: { filterWord: this.search },
+          filterWord: {
+            filterWord: this.search,
+            matchingPattern: 'PARTIAL_MATCH'
+          },
           // ページング条件
           pageCondition: this.createPageCondition(
             this.nowPage, // 現在のページ
@@ -136,11 +145,11 @@ export default class TodoPaging extends Vue {
         }
       })
 
-      if (res && res.data && res.data.todoConnection) {
+      if (res && res.data && res.data.customerConnection) {
         const conn = res.data.customerConnection
 
         // 一覧表示するデータを抜き出す
-        // edges [ node {id, text, done, ...} ]
+        // edges [ node {id, name, age} ]
         this.items = conn.edges
           .filter((e: Edge) => e.node)
           .map((e: Edge) => e.node)
@@ -189,11 +198,8 @@ export default class TodoPaging extends Vue {
     if (sortBy.length !== 1 || sortDesc.length !== 1) {
       return null
     }
-    console.log(sortBy)
-    console.log(sortDesc)
     // TODO: enum値を指定するとビルドが通らなくなるので、やむなく文字列で指定
     const direction = sortDesc[0] ? 'DESC' : 'ASC'
-    console.log(direction)
     switch (sortBy[0]) {
       case 'id':
         return { key: { customerOrderKey: 'ID' }, direction }
