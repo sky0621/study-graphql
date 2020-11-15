@@ -32,10 +32,13 @@ export default {
     '@nuxt/typescript-build',
     // https://go.nuxtjs.dev/vuetify
     '@nuxtjs/vuetify',
+    '@nuxt/typescript-build'
   ],
 
   // Modules (https://go.nuxtjs.dev/config-modules)
   modules: [
+    '@nuxtjs/apollo',
+    '@nuxtjs/proxy'
   ],
 
   // Vuetify module configuration (https://go.nuxtjs.dev/config-vuetify)
@@ -57,7 +60,29 @@ export default {
     }
   },
 
+  apollo: {
+    clientConfigs: {
+      default: {
+        httpEndpoint: 'http://localhost:8080/query'
+      }
+    },
+    // 任意だけど、これがないとGraphQL的なエラー起きた時に原因が掴みづらいため
+    errorHandler: '~/plugins/apollo-error-handler.js'
+  },
+
+  proxy: {
+    '/query': {
+      target: 'http://localhost:8080'
+    }
+  },
+
   // Build Configuration (https://go.nuxtjs.dev/config-build)
   build: {
+    babel: {
+      plugins: [
+        ['@babel/plugin-proposal-decorators', { legacy: true }],
+        ['@babel/plugin-proposal-class-properties', { loose: true }]
+      ]
+    }
   }
 }
