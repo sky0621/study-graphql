@@ -7,14 +7,24 @@
     "build": "nuxt-ts build",
     "start": "nuxt-ts start",
     "generate": "nuxt-ts generate",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint --ext .js,.vue --ignore-path .gitignore .",
+    "codegen": "graphql-codegen"
   },
   "dependencies": {
+    "@graphql-codegen/typescript": "^1.17.11",
+    "@graphql-codegen/typescript-operations": "^1.17.9",
     "@nuxt/typescript-runtime": "^2.0.0",
+    "@nuxtjs/apollo": "^4.0.1-rc.5",
+    "@typescript-eslint/parser": "^4.7.0",
     "core-js": "^3.6.5",
-    "nuxt": "^2.14.6"
+    "graphql": "^15.4.0",
+    "nuxt": "^2.14.6",
+    "nuxt-property-decorator": "^2.8.8",
+    "vue-apollo": "^3.0.5"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^1.19.1",
     "@nuxt/types": "^2.14.6",
     "@nuxt/typescript-build": "^2.0.3",
     "@nuxtjs/vuetify": "^1.11.2",

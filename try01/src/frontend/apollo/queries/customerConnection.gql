@@ -1,0 +1,27 @@
+query customerConnection(
+  $filterWord: TextFilterCondition
+  $pageCondition: PageCondition
+  $edgeOrder: EdgeOrder
+) {
+  customerConnection(
+    filterWord: $filterWord
+    pageCondition: $pageCondition
+    edgeOrder: $edgeOrder
+  ) {
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      node {
+        id
+        name
+        age
+      }
+      cursor
+    }
+    totalCount
+  }
+}
